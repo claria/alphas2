@@ -1,3 +1,12 @@
+[config]
+[[description]]
+q = bin
+asq = data
+tot = exp_uncert
+[[corr_type]]
+tot = uncorr
+
+[data]
 # q     asq    tot_l  tot_h
 5.62361 0.2005 0.0329 0.0238
 5.98999 0.1970 0.0299 0.0229

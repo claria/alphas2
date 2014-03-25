@@ -54,3 +54,38 @@ class AlphasRunningPlot(BasePlot):
 
         self._save_fig()
         plt.close(self.fig)
+
+class ProfileLikelihoodPlot(BasePlot):
+
+    def __init__(self, data=None, **kwargs):
+        super(ProfileLikelihoodPlot, self).__init__(**kwargs)
+        self.ax = self.fig.add_subplot(111)
+        self._data = data
+        self.prepare()
+        self.set_style(self.ax, style='cmsprel')
+
+    def prepare(self):
+        self.ax.set_xlabel(r'$\alpha_\mathrm{{S}}(M_\mathrm{{Z}})$', x=1.0, ha='right', size='large')
+        self.ax.set_ylabel('$\chi^2$', y=1.0, ha='right', size='large')
+        self.ax.set_xscale('linear')
+
+    def produce(self):
+        # Pass all datasets + config
+        # or just the config
+
+        # Plot theory prediction
+        # read in fit _results
+        self.ax.plot(self._data['x'], self._data['y'], color='black')
+        self.ax.axhline(y=min(self._data['y'])+1.)
+
+    def finalize(self):
+
+        self.ax.set_xlim(0.114, 0.118)
+        min_data = min(self._data['y'])
+        self.ax.set_ylim(min_data - 1., min_data + 10.)
+        self._save_fig()
+        plt.close(self.fig)
+
+
+
+

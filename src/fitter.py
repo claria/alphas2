@@ -2,7 +2,7 @@
 import os
 import numpy as np
 from scipy.optimize import minimize_scalar
-from plotting import AlphasRunningPlot
+from plotting import AlphasRunningPlot, ProfileLikelihoodPlot
 
 # Alphas fitter modules
 from measurement import MetaDataSet, TheoryCalculatorSource
@@ -16,6 +16,7 @@ def perform_fit(**kwargs):
     result = minimize_scalar(min_func, args=(metadataset,),
                              method='bounded',
                              bounds=(0.1000, 0.2000))
+    print result
     asmz = [91.18, result.x, 0.0007, 0.0007]
     save_result(asmz)
 
@@ -46,8 +47,16 @@ def profile_likelihood(**kwargs):
     metadataset = prepare_dataset(**kwargs)
 
     asmz_range = np.arange(0.100, 0.140, 0.0001)
-    for asmz in asmz_range:
-        print asmz, min_func(asmz=asmz, metadataset=metadataset)
+    chi2 = np.zeros(asmz_range.shape)
+
+    for i, asmz in enumerate(asmz_range):
+        chi2[i] = min_func(asmz=asmz, metadataset=metadataset)
+
+    data = {'x' : asmz_range,
+            'y' : chi2}
+
+    profile_plot = ProfileLikelihoodPlot(data)
+    profile_plot.do_plot()
 
 
 def save_result(asmz):

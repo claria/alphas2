@@ -31,7 +31,7 @@ class MetaDataSet(object):
             for j in range(0, dataset.nbins):
                 for k in range(0, dataset.nbins):
                     cov_matrix[i+j][i+k] = dataset_cov_matrix[j][k]
-            i = dataset.nbins
+            i += dataset.nbins
         return cov_matrix
 
     def add_dataset(self, dataset):
@@ -396,7 +396,8 @@ class UncertaintySource(Source):
     def _symmetrize(arr, choice=1):
         """One possibility to symmetrize uncertainty of shape (2,xxx)"""
         if choice == 1:
-            return 0.5 * (arr[0] + arr[1])
+            out = 0.5 * (arr[0] + arr[1])
+        return out
 
 
 class TheoryCalculatorSource(Source):

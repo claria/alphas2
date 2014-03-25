@@ -70,8 +70,6 @@ class DataSetProvider(object):
                  ("{}_h".format(label) in self._array_dict):
                 item = np.vstack((self._array_dict["{}_l".format(label)],
                                   self._array_dict["{}_h".format(label)]))
-                print "hallodri"
-                print item
             else:
                 raise Exception("Requested source not found in datafile.")
 
