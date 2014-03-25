@@ -1,2 +1,13 @@
+[config]
+label = "CMS Top Measurement"
+reference = "arxiv zyx"
+[[description]]
+q = bin
+asq = data
+tot = exp_uncert
+[[corr_type]]
+tot = uncorr
+
+[data]
 # q   asq    tot
 173.2 0.1151 0.0033

@@ -5,7 +5,7 @@ import numpy as np
 
 class ArrayDict(dict):
     """
-    ArrayDict objects are dictionaries containing named numpy arrays
+    ArrayDict objects are dictionaries containing named np arrays
     """
 
     def __init__(self, from_file=None, **kwargs):
@@ -57,7 +57,7 @@ class ArrayDict(dict):
 
     def append(self, arraydict, axis=0):
         """
-        Appends numpy arrays contained in another arraydict with those present in self.
+        Appends np arrays contained in another arraydict with those present in self.
         0-d arrays are ignored.
         """
 
@@ -84,7 +84,7 @@ class ArrayDict(dict):
 
     def save(self, filename, verbose=True):
         """
-        save the arrays in a numpy file
+        save the arrays in a np file
         """
         if verbose:
             print 'Saving', filename
@@ -95,7 +95,7 @@ class ArrayDict(dict):
 
     def dump(self, filename):
         """
-        save the arrays in a numpy file
+        save the arrays in a np file
         """
         np.savez(filename, **self)
 

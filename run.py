@@ -19,23 +19,26 @@ def main():
 
     # Parent
     parent_parser = argparse.ArgumentParser(add_help=False, prog='PROG')
-
+    parent_parser.add_argument('-c', '--config', help='Analysis config', required=True)
     # Fitting
     parser = argparse.ArgumentParser(add_help=False, prog='PROG')
     subparsers = parser.add_subparsers()
     parser_fit = subparsers.add_parser('fit', help='Do the Fit',
                                        parents=[parent_parser])
-    parser_fit.add_argument('-c', '--config', help='Analysis config')
     parser_fit.set_defaults(func=perform_fit)
 
     # Plotting
     parser_plot = subparsers.add_parser('plot', help='Do the plotting',
                                         parents=[parent_parser])
+    parser_plot.add_argument('plot', type=str,
+                             choices=['running'],
+                             help='Types of plots')
     parser_plot.set_defaults(func=plot)
 
     # Save all commandline arguments in dict
     kwargs = vars(parser.parse_args())
 
+    logger.debug("Command line arguments:")
     logger.debug(str(kwargs))
 
     # Call desired function with all supplied keyword arguments

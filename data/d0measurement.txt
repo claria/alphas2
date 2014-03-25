@@ -1,3 +1,26 @@
+#Config of this datafile
+[config]
+label = "D0 Measurement"
+reference = "arxiv xyz"
+
+[[description]]
+q = bin
+asq = data
+uncor = exp_uncert
+syst = exp_uncert
+np = theo_uncert
+pdf = theo_uncert
+scale = theo_uncert
+
+[[corr_type]]
+uncor = uncorr
+syst = corr
+np = corr
+pdf = corr
+scale = corr
+
+# Data part of file starts after this
+[data]
 # q   asq    uncor  syst    np      pdf     scale
 54.5  0.1229 0.0004 0.00485 0.00570 0.00050 0.00145
 64.5  0.1204 0.0003 0.00420 0.00440 0.00055 0.00140
