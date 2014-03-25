@@ -1,5 +1,10 @@
 import numpy as np
 
+try:
+    from fastnlo import CRunDec
+except ImportError:
+    from fastnloreader import CRunDec
+
 
 class MetaDataSet(object):
     """Holds all datasets and returns global covariance matrix
@@ -392,3 +397,44 @@ class UncertaintySource(Source):
         """One possibility to symmetrize uncertainty of shape (2,xxx)"""
         if choice == 1:
             return 0.5 * (arr[0] + arr[1])
+
+
+class TheoryCalculatorSource(Source):
+
+    def __init__(self, asmz=0.1184, mz=91.18, nflavor=5, nloop=4, algo='crundec',
+                 label=None, origin=None):
+        super(TheoryCalculatorSource, self).__init__(None, label=label, origin=origin)
+        self._asmz = asmz
+        self._mz = mz
+        self._nflavor = nflavor
+        self._nloop = nloop
+        self._algo = algo
+        self._qarr = None
+        self._calc_asqarr = np.vectorize(self._calc_asq)
+
+    def prepare(self, dataset):
+        qarr = dataset.get_source('q').get_arr()
+        self._qarr = qarr
+
+    def set_qarr(self, qarr):
+        self._qarr = qarr
+
+    def set_asmz(self, asmz):
+        self._asmz = asmz
+
+    def set_mz(self, mz):
+        self._mz = mz
+
+    def set_nflavor(self, nflavor):
+        self._nflavor = nflavor
+
+    def set_nloop(self, nloop):
+        self._nloop = nloop
+
+    def _calc_asq(self, q):
+        crundec = CRunDec()
+        asq = crundec.AlphasExact(self._asmz, self._mz, q, self._nflavor, self._nloop)
+        return asq
+
+    def get_arr(self):
+        return self._calc_asqarr(self._qarr)

@@ -9,5 +9,5 @@ tot = exp_uncert
 tot = uncorr
 
 [data]
-# q   asq    tot
-173.2 0.1151 0.0033
+# q   asq    tot_l  tot_h
+173.2 0.1151 0.0033 0.0032

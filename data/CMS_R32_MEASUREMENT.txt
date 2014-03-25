@@ -7,6 +7,7 @@ asq = data
 tot = exp_uncert
 [[corr_type]]
 tot = uncorr
+[data]
 # q   asq    tot_l  tot_h
 474.0 0.0936 0.0040 0.0014
 664.0 0.0894 0.0031 0.0019

@@ -14,7 +14,7 @@ scale = theo_uncert
 
 [[corr_type]]
 uncor = uncorr
-syst = corr
+syst = uncorr
 np = corr
 pdf = corr
 scale = corr

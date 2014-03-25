@@ -60,10 +60,20 @@ class DataSetProvider(object):
         self._array_dict = arr_dict
 
     def _parse_arraydict(self):
-        print self._dataset_config
-        for label, item in self._array_dict.items():
-            if not label in self._dataset_config['description']:
-                continue
+        #for label, item in self._array_dict.items():
+        for label in self._dataset_config['description']:
+            # Symmetric uncertainty source
+            if label in self._array_dict:
+                item = self._array_dict[label]
+            # Asymmetric uncertainty source
+            elif ("{}_l".format(label) in self._array_dict) and \
+                 ("{}_h".format(label) in self._array_dict):
+                item = np.vstack((self._array_dict["{}_l".format(label)],
+                                  self._array_dict["{}_h".format(label)]))
+                print "hallodri"
+                print item
+            else:
+                raise Exception("Requested source not found in datafile.")
 
             origin = self._dataset_config['description'][label]
             if origin in ['bin', 'data_correction', 'theo_correction', 'data', 'theory']:

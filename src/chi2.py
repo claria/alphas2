@@ -79,14 +79,14 @@ class Chi2Nuisance(Chi2):
         chi2_corr = 0.0
         nbeta = len(self._beta)
         # npoints = len(data)
-        B = np.zeros((nbeta,))
-        A = np.matrix(np.identity(nbeta))
+        b = np.zeros((nbeta,))
+        a = np.matrix(np.identity(nbeta))
         # inv_matrix = cov_matrix.getI()
 
         # Calculate Bk and Akk' according to paper: PhysRevD.65.014012
         # Implementation similar to h1fitter
         for k in range(0, nbeta):
-            B[k] = (np.matrix(self._data - self._theory)
+            b[k] = (np.matrix(self._data - self._theory)
                     * self._inv_matrix * np.matrix(self._beta[k]()).getT())
             # Better readable but much slower
             # for l in range(0,npoints):
@@ -94,7 +94,7 @@ class Chi2Nuisance(Chi2):
             #        B[k] += data[l] * syst_error[k][l]*
             #                (data[i]-theory[i]) * inv_matrix[l,i]
             for j in range(0, nbeta):
-                A[k, j] += (np.matrix(self._beta[j]()) * self._inv_matrix *
+                a[k, j] += (np.matrix(self._beta[j]()) * self._inv_matrix *
                             np.matrix(self._beta[k]()).getT())
                 # Better readable but way slower
                 # for l in range(0,npoints):
@@ -103,7 +103,7 @@ class Chi2Nuisance(Chi2):
                 #                 syst_error[j][l] * data[l] * inv_matrix[l,i]
 
         # Multiply by -1 so nuisance parameters correspond to shift
-        self._r = np.linalg.solve(A, B) * (-1)
+        self._r = np.linalg.solve(a, b) * (-1)
         # Calculate theory prediction shifted by nuisance parameters
         self._theory_mod = self._theory.copy()
         for k in range(0, nbeta):

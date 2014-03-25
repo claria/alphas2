@@ -5,7 +5,7 @@ import argparse
 import logging
 
 #import numpy
-from src.fitter import perform_fit, plot
+from src.fitter import perform_fit, plot, profile_likelihood
 
 
 # Initialize logger
@@ -27,6 +27,9 @@ def main():
                                        parents=[parent_parser])
     parser_fit.set_defaults(func=perform_fit)
 
+    parser_profile = subparsers.add_parser('profile', help='Do the Fit',
+                                           parents=[parent_parser])
+    parser_profile.set_defaults(func=profile_likelihood)
     # Plotting
     parser_plot = subparsers.add_parser('plot', help='Do the plotting',
                                         parents=[parent_parser])
