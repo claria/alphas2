@@ -1,7 +1,7 @@
 # Python, np, scipy modules
 import os
 import numpy as np
-from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize_scalar, brentq
 from plotting import AlphasRunningPlot, ProfileLikelihoodPlot
 
 # Alphas fitter modules
@@ -16,9 +16,24 @@ def perform_fit(**kwargs):
     result = minimize_scalar(min_func, args=(metadataset,),
                              method='bounded',
                              bounds=(0.1000, 0.2000))
-    print result
-    asmz = [91.18, result.x, 0.0007, 0.0007]
+
+    # Chi2 tolerance for error evaluation
+    tolerance = 1.0
+
+    asmz_c = result.x
+    # Find root of function min_func - asmz_central + tolerance
+    asmz_l = asmz_c - brentq(rootfunc, 0.110, asmz_c, args=(metadataset,asmz_c, tolerance))
+    asmz_h = brentq(rootfunc, asmz_c, 0.200, args=(metadataset, asmz_c, tolerance)) - asmz_c
+
+    asmz = [91.18, asmz_c, asmz_l, asmz_h]
     save_result(asmz)
+
+
+def rootfunc(asmz, metadataset, asmz_central, tolerance):
+    print metadataset.datasets
+    chi2 = min_func(asmz, metadataset) - min_func(asmz_central, metadataset) - tolerance
+    print "xzy", chi2
+    return chi2
 
 
 def prepare_dataset(**kwargs):
@@ -40,23 +55,6 @@ def prepare_dataset(**kwargs):
         metadataset.add_dataset(dataset)
 
     return metadataset
-
-
-def profile_likelihood(**kwargs):
-
-    metadataset = prepare_dataset(**kwargs)
-
-    asmz_range = np.arange(0.100, 0.140, 0.0001)
-    chi2 = np.zeros(asmz_range.shape)
-
-    for i, asmz in enumerate(asmz_range):
-        chi2[i] = min_func(asmz=asmz, metadataset=metadataset)
-
-    data = {'x' : asmz_range,
-            'y' : chi2}
-
-    profile_plot = ProfileLikelihoodPlot(data)
-    profile_plot.do_plot()
 
 
 def save_result(asmz):

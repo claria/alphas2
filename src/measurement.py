@@ -434,6 +434,9 @@ class TheoryCalculatorSource(Source):
 
     def _calc_asq(self, q):
         crundec = CRunDec()
+        print type(self._asmz)
+        print type(self._mz)
+        print type(q)
         asq = crundec.AlphasExact(self._asmz, self._mz, q, self._nflavor, self._nloop)
         return asq
 

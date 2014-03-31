@@ -42,10 +42,12 @@ class AlphasRunningPlot(BasePlot):
         print asmz_result['asq']
         theory.set_asmz(float(asmz_result['asq']))
         theory_qarr = np.linspace(10, 1200, 100)
-        print theory_qarr
         theory.set_qarr(theory_qarr)
-        print theory.get_arr()
         self.ax.plot(theory_qarr, theory.get_arr(), color='yellow')
+        theory.set_asmz(asmz_result['asq'] + asmz_result['tot_h'])
+        self.ax.plot(theory_qarr, theory.get_arr(), color='green')
+        theory.set_asmz(asmz_result['asq'] - asmz_result['tot_l'])
+        self.ax.plot(theory_qarr, theory.get_arr(), color='green')
 
     def finalize(self):
 
