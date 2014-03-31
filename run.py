@@ -9,7 +9,7 @@ from src.fitter import perform_fit, plot
 
 
 # Initialize logger
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
 logger = logging.getLogger()
 
 

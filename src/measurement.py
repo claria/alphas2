@@ -1,32 +1,43 @@
 import numpy as np
 
+from chi2 import Chi2Cov
+
 try:
     from fastnlo import CRunDec
 except ImportError:
     from fastnloreader import CRunDec
 
 
-class MetaDataSet(object):
+class GobalDataSet(object):
     """Holds all datasets and returns global covariance matrix
        and theory/ data arrays
        """
     def __init__(self):
 
-        self.datasets = []
+        self._datasets = []
         self._nbins = 0
 
     def get_theory(self):
-        return np.concatenate([dataset.get_theory() for dataset in self.datasets])
+        return np.concatenate([dataset.get_theory() for dataset in self._datasets])
+
+    theory = property(get_theory)
+
+    def set_theory_parameters(self, **kwargs):
+        for dataset in self._datasets:
+            dataset.set_theory_parameters(**kwargs)
 
     def get_data(self):
-        return np.concatenate([dataset.get_data() for dataset in self.datasets])
+        return np.concatenate([dataset.get_data() for dataset in self._datasets])
+
+    data = property(get_data)
+
     def get_nbins(self):
         return self._nbins
 
     def get_cov_matrix(self):
         cov_matrix = np.zeros((self._nbins, self._nbins))
         i = 0
-        for dataset in self.datasets:
+        for dataset in self._datasets:
             dataset_cov_matrix = dataset.get_cov_matrix()
             for j in range(0, dataset.nbins):
                 for k in range(0, dataset.nbins):
@@ -35,8 +46,12 @@ class MetaDataSet(object):
         return cov_matrix
 
     def add_dataset(self, dataset):
-        self.datasets.append(dataset)
+        self._datasets.append(dataset)
         self._nbins += dataset.nbins
+
+    def get_chi2(self):
+        chi2_calculator = Chi2Cov(self)
+        return chi2_calculator.get_chi2()
 
 
 class DataSet(object):
@@ -81,6 +96,9 @@ class DataSet(object):
         return theory
 
     theory = property(get_theory, set_theory)
+
+    def set_theory_parameters(self, **kwargs):
+        self._theory.set_theory_parameters(**kwargs)
 
     #
     #Data
@@ -191,6 +209,10 @@ class DataSet(object):
             return self._uncertainties[label]
         else:
             raise Exception('Label not found in sources.')
+
+    def get_chi2(self):
+        chi2_calculator = Chi2Cov(self)
+        return chi2_calculator.get_chi2()
 
 
 class Source(object):
@@ -321,7 +343,7 @@ class UncertaintySource(Source):
 
     def get_arr(self, symmetric=True):
         if symmetric is True:
-            return self._symmetrize(self._arr)
+            return self._symmetrize()
         else:
             return self._arr
 
@@ -392,12 +414,9 @@ class UncertaintySource(Source):
     #
     # Error symmetrization
     #
-    @staticmethod
-    def _symmetrize(arr, choice=1):
+    def _symmetrize(self):
         """One possibility to symmetrize uncertainty of shape (2,xxx)"""
-        if choice == 1:
-            out = 0.5 * (arr[0] + arr[1])
-        return out
+        return 0.5 * (self._arr[0] + self._arr[1])
 
 
 class TheoryCalculatorSource(Source):
@@ -432,11 +451,19 @@ class TheoryCalculatorSource(Source):
     def set_nloop(self, nloop):
         self._nloop = nloop
 
+    def set_theory_parameters(self, asmz=None, mz=None, nflavor=None, nloop=None):
+
+        if asmz is not None:
+            self._asmz = asmz
+        if mz is not None:
+            self._asmz = asmz
+        if nflavor is not None:
+            self._asmz = asmz
+        if nloop is not None:
+            self._asmz = asmz
+
     def _calc_asq(self, q):
         crundec = CRunDec()
-        print type(self._asmz)
-        print type(self._mz)
-        print type(q)
         asq = crundec.AlphasExact(self._asmz, self._mz, q, self._nflavor, self._nloop)
         return asq
 

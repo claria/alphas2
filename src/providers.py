@@ -4,7 +4,6 @@ import StringIO
 
 from measurement import Source, UncertaintySource
 from measurement import DataSet
-from config import config
 from configobj import ConfigObj
 
 
@@ -15,11 +14,10 @@ class DataSetProvider(object):
         self._array_dict = None
         self._dataset_config = None
 
-        self._dataset_path = os.path.join(config.data_dir, filename)
+        self._dataset_path = os.path.join('data/', filename)
         self._read_datafile()
 
         self._parse_arraydict()
-
 
     def get_dataset(self):
         return DataSet(self.sources)
@@ -44,7 +42,7 @@ class DataSetProvider(object):
         datafile.seek(0)
 
         config = ConfigObj(configfile)['config']
-        data =  np.genfromtxt(datafile, names=True)
+        data = np.genfromtxt(datafile, names=True)
 
         configfile.close()
         datafile.close()
