@@ -41,7 +41,7 @@ class DataSetProvider(object):
         configfile.seek(0)
         datafile.seek(0)
 
-        config = ConfigObj(configfile)['config']
+        config = ConfigObj(configfile)
         data = np.genfromtxt(datafile, names=True)
 
         configfile.close()

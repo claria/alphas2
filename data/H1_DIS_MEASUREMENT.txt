@@ -1,9 +1,9 @@
 [config]
-[[description]]
+[description]
 q = bin
 asq = data
 tot = exp_uncert
-[[corr_type]]
+[corr_type]
 tot = uncorr
 
 [data]

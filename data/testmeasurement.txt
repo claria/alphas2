@@ -1,5 +1,0 @@
-# q   asq          tot
-173.0 0.1079363899 0.0007
- 
-
-# test measurement

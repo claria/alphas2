@@ -2,8 +2,7 @@
 [config]
 label = "D0 Measurement"
 reference = "arxiv xyz"
-
-[[description]]
+[description]
 q = bin
 asq = data
 uncor = exp_uncert
@@ -11,8 +10,7 @@ syst = exp_uncert
 np = theo_uncert
 pdf = theo_uncert
 scale = theo_uncert
-
-[[corr_type]]
+[corr_type]
 uncor = uncorr
 syst = uncorr
 np = corr

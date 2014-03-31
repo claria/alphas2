@@ -1,11 +1,14 @@
 [config]
-label = "CMS Top Measurement"
-reference = "arxiv zyx"
-[[description]]
+# TODO: needs to be updated
+long_label = "CMS R32 Measurement"
+short_label = "CMS R32"
+reference = "Eur. Phys. J. C (2013) 73:2604"
+[description]
 q = bin
 asq = data
 tot = exp_uncert
-[[corr_type]]
+#Correlation of uncertainty
+[corr_type]
 tot = uncorr
 [data]
 # q   asq    tot_l  tot_h
