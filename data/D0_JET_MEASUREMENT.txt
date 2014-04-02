@@ -1,6 +1,7 @@
 #Config of this datafile
 [config]
-label = "D0 Measurement"
+short_label = "D0 Jet Measurement"
+long_label = "D0 Jets"
 reference = "arxiv xyz"
 [description]
 q = bin
@@ -11,11 +12,11 @@ np = theo_uncert
 pdf = theo_uncert
 scale = theo_uncert
 [corr_type]
-uncor = uncorr
-syst = uncorr
-np = corr
-pdf = corr
-scale = corr
+uncor = corr:0.0
+syst = corr:1.0
+np = corr:1.
+pdf = corr:1.
+scale = corr:1.
 
 # Data part of file starts after this
 [data]

@@ -16,11 +16,10 @@ class DataSetProvider(object):
 
         self._dataset_path = os.path.join('data/', filename)
         self._read_datafile()
-
         self._parse_arraydict()
 
     def get_dataset(self):
-        return DataSet(self.sources)
+        return DataSet(sources=self.sources, label=self._dataset_config['config']['short_label'])
 
     def _read_datafile(self):
         #Split into two file objects
@@ -77,7 +76,7 @@ class DataSetProvider(object):
                 self.sources.append(source)
             elif origin in ['exp_uncert', 'theo_uncert']:
                 corr_type = self._dataset_config['corr_type'][label]
-                if corr_type in ['corr', 'uncorr']:
+                if corr_type in ['corr', 'uncorr'] or corr_type.startswith('corr'):
                     uncertainty_source = UncertaintySource(origin=origin,
                                                            arr=item,
                                                            label=label,

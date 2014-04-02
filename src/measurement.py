@@ -59,11 +59,13 @@ class DataSet(object):
        Source: data, theory, bins, correction_factors
        UncertaintySource: experimental and theoretical uncertainties
     """
-    def __init__(self, sources=None, data=None, theory=None):
+    def __init__(self, data=None, theory=None, sources=None,
+                 label=''):
 
         # All member attributes
         self._theory = None
         self._data = None
+        self._label = label
 
         if theory is not None:
             self.theory = theory
@@ -82,6 +84,18 @@ class DataSet(object):
         return self.data.size
 
     nbins = property(get_nbins)
+
+    #
+    # label
+    #
+
+    def get_label(self):
+        return self._label
+
+    def set_label(self, label):
+        self._label = label
+
+    label = property(get_label, set_label)
 
     #
     #Theory
@@ -316,19 +330,27 @@ class UncertaintySource(Source):
             raise Exception('Either diagonal uncertainty or covariance matrix must be provided.')
         if arr is not None and cov_matrix is not None:
             raise Exception('Please provide either a diagonal uncertainty or a cov matrix, not both.')
-        if not isinstance(arr, np.ndarray):
-            arr = np.array(arr)
+        if cov_matrix is not None and corr_type is not None:
+            raise Exception('No corr_type may be provided if a cov matrix is given.')
+        if cov_matrix is not None and corr_matrix is not None:
+            raise Exception('No corr_matrix may be provided if a cov matrix is given.')
+        if corr_matrix is None and (corr_type is None and corr_matrix is None):
+            raise Exception('Neither a covariance matrix nor a correlation matrix or corr_type is provided.')
 
         # No covariance is provided
         if cov_matrix is None:
+            # Convert arr into numpy array if not None
+            if not isinstance(arr, np.ndarray):
+                arr = np.array(arr)
             if arr.ndim == 1:
                 arr = np.vstack((arr, arr))
             elif arr.ndim == 2:
                 pass
             else:
-                raise Exception('Please provide a 1-dim or 2-dim array.')
+                raise Exception('A 1-dim or 2-dim array must be provided.')
+        # Covariance matrix is provided
         else:
-            # Use the covariance matrix
+            # Extract diagonal elements from covariance matrix
             arr = np.sqrt(cov_matrix.diagonal())
             arr = np.vstack((arr, arr))
             self.corr_matrix = cov_matrix / np.outer(self._arr[0], self._arr[0])
@@ -336,11 +358,12 @@ class UncertaintySource(Source):
         # Call super __init__ with constructed array
         super(UncertaintySource, self).__init__(arr=arr, label=label, origin=origin)
 
-        if cov_matrix is None and corr_matrix is not None:
-            self.corr_matrix = corr_matrix
+        # No covariance matrix given, but correlation matrix given
+        self.set_correlation_matrix(corr_matrix=corr_matrix, corr_type=corr_type)
 
-        self._corr_type = corr_type
-
+    #
+    # arr
+    #
     def get_arr(self, symmetric=True):
         if symmetric is True:
             return self._symmetrize()
@@ -358,19 +381,31 @@ class UncertaintySource(Source):
     #
     # correlation matrix
     #
-    def set_correlation_matrix(self, corr_matrix):
-        self._corr_type = 'bintobin'
-        self._corr_matrix = corr_matrix
+    def set_correlation_matrix(self, corr_matrix=None, corr_type=None):
+        if corr_matrix is not None:
+            self._corr_matrix = corr_matrix
+        elif corr_type is not None:
+            if corr_type == 'uncorr':
+                self._corr_matrix = np.identity(self.nbins)
+            elif corr_type.startswith('corr'):
+                if len(corr_type.split(':')) == 2:
+                    corr_factor = float(corr_type.split(':')[1])
+                elif corr_type == 'corr':
+                    corr_factor = 1.0
+                else:
+                    raise Exception('Invalid corr_type. {}'.format(corr_type))
+                self._corr_matrix = (np.identity(self.nbins) +
+                                    (np.ones((self.nbins, self.nbins)) -
+                                     np.identity(self.nbins)) * corr_factor)
+            elif corr_type == 'bintobin':
+                pass
+            else:
+                raise Exception('Correlation Type invalid.')
+        else:
+            raise Exception('Either corr_matrix or corr_type must be provided.')
 
     def get_correlation_matrix(self):
-        if self._corr_type == 'corr':
-            return np.ones((self.nbins, self.nbins))
-        elif self._corr_type == 'uncorr':
-            return np.identity(self.nbins)
-        elif self._corr_type == 'bintobin':
-            return self._corr_matrix
-        else:
-            raise Exception('Correlation Type invalid.')
+        return self._corr_matrix
 
     corr_matrix = property(get_correlation_matrix, set_correlation_matrix)
 
@@ -378,10 +413,19 @@ class UncertaintySource(Source):
     # Correlation type
     #
     def set_corr_type(self, corr_type):
-        self._corr_type = corr_type
+        # TODO: stub function. should manipulate the correlation matrix using the given corr_type
+        pass
 
     def get_corr_type(self):
-        return self._corr_type
+        """Calculates and returns the corr_type of the covariance matrix. Needed for the nuisance parameter
+           method in which fully correlated uncertainties are treated using nuisance parameters.
+        """
+        if np.array_equal(self.corr_matrix,np.identity(self.nbins)):
+            return 'uncorr'
+        elif np.array_equal(self.corr_matrix, np.ones((self.nbins, self.nbins))):
+            return 'corr'
+        else:
+            return 'bintobin'
 
     corr_type = property(get_corr_type, set_corr_type)
 
@@ -400,14 +444,7 @@ class UncertaintySource(Source):
         """
         Get covariance matrix
         """
-        if self._corr_type == 'corr':
-            return np.outer(self.get_arr(), self.get_arr())
-        elif self._corr_type == 'uncorr':
-            return np.diagflat(np.square(self.get_arr()))
-        elif self._corr_type == 'bintobin':
-            return np.outer(self.get_arr(), self.get_arr()) * self.get_correlation_matrix()
-        else:
-            raise Exception('Correlation type not valid.')
+        return np.outer(self.get_arr(), self.get_arr()) * self.corr_matrix
 
     cov_matrix = property(get_cov_matrix, set_cov_matrix)
 

@@ -29,6 +29,7 @@ def perform_fit(**kwargs):
 
     fit = AlphasFitter(global_dataset)
     fit.do_fit()
+    fit.save_result()
     print fit._asmz_fit
     print fit._asmz_fit_uncert
 
@@ -113,4 +114,4 @@ class AlphasFitter(object):
             filepath = os.path.join('output/', 'Result.txt')
         with open(filepath, 'w') as f:
             f.write('# {} {} {} {}\n'.format('q', 'asq', 'tot_l', 'tot_h'))
-            f.write('{} {} {} {}'.format(self._asmz_fit, *self._asmz_fit_uncert))
+            f.write('{} {} {} {}'.format(91.18, self._asmz_fit, *self._asmz_fit_uncert))

@@ -22,12 +22,8 @@ class AlphasRunningPlot(BasePlot):
         pass
 
     def produce(self):
-        # Pass all datasets + config
-        # or just the config
-
-        # Plot theory prediction
-        # read in fit _results
-        theory_path = os.path.join('output/', 'result_asmz.txt')
+        # Plot theory
+        theory_path = os.path.join('output/', 'Result.txt')
         asmz_result = np.genfromtxt(theory_path, names=True)
         theory = TheoryCalculatorSource(label='theory', origin='theory')
         theory.set_asmz(float(asmz_result['asq']))
@@ -39,14 +35,27 @@ class AlphasRunningPlot(BasePlot):
         theory.set_asmz(asmz_result['asq'] - asmz_result['tot_l'])
         self.ax.plot(theory_qarr, theory.get_arr(), color='green')
 
+        # Plot datasets
         for dataset in self._datasets:
             x = dataset.get_source(label='q').get_arr()
             y = dataset.get_data()
             yerr = dataset.get_diagonal_unc(origin='exp_uncert')
-            self.ax.errorbar(x=x, y=y, yerr=yerr, fmt='o')
+            self.ax.errorbar(x=x, y=y, yerr=yerr, fmt='o', label=dataset.label, zorder=10)
+
+        #Get artists and labels for legend and chose which ones to display
+        handles, labels = self.ax.get_legend_handles_labels()
+
+        #Create custom artists
+        fit_artist = plt.Line2D((0, 1), (0, 0), color='y')
+
+        #Create legend from custom artist/label lists
+        self.ax.legend([handle for handle in handles]+[fit_artist],
+                       [label for label in labels]+['Alphas Fit'],
+                       loc='upper right')
+
         #Text fields
-        self.ax.text(s=r'$\alpha_S (m_Z) = {} \pm xx$'.format(asmz_result['asq']),
-                     x=1., y=1., ha='right', va='top', transform=self.ax.transAxes)
+        # self.ax.text(s=r'$\alpha_S (m_Z) = {} \pm xx$'.format(asmz_result['asq']),
+        #              x=1., y=0.98, ha='right', va='top', transform=self.ax.transAxes)
 
     def finalize(self):
 
@@ -87,7 +96,3 @@ class ProfileLikelihoodPlot(BasePlot):
         self.ax.set_ylim(min_data - 1., min_data + 10.)
         self._save_fig()
         plt.close(self.fig)
-
-
-
-

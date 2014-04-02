@@ -1,4 +1,8 @@
 [config]
+# TODO: needs to be updated
+long_label = "H1 DIS measurement"
+short_label = "H1 DIS"
+reference = "Eur. Phys. J. C (2013) 73:2604"
 [description]
 q = bin
 asq = data
