@@ -6,8 +6,8 @@ from plotting import AlphasRunningPlot
 from ext.configobj import ConfigObj
 
 # Alphas fitter modules
-from measurement import GobalDataSet, TheoryCalculatorSource
-from providers import DataSetProvider
+from measurement import GobalDataSet
+from providers import DataProvider
 
 
 def perform_fit(**kwargs):
@@ -15,16 +15,19 @@ def perform_fit(**kwargs):
     # read config
     analysis_config = ConfigObj(kwargs['config'])
     # read all datasets
-    dataset_filenames = analysis_config['datasets'].as_list('dataset_filenames')
+    dataset_filenames = analysis_config.as_list('datasets')
 
+    # Global dataset holding all data points, covariance matrices, etc...
     global_dataset = GobalDataSet()
 
     for dataset_filename in dataset_filenames:
-        dataset_provider = DataSetProvider(dataset_filename)
+        dataset_provider = DataProvider(dataset_filename)
+        dataset_config = dataset_provider.get_dataset_config()
         dataset = dataset_provider.get_dataset()
         # Add user defined theory calculation source
-        theory_source = TheoryCalculatorSource(label='asq_theory', origin='theory')
-        dataset.add_sources([theory_source])
+        theory_module = TheoryModule(dataset_config)
+        dataset.add_module(theory_module)
+
         global_dataset.add_dataset(dataset)
 
     fit = AlphasFitter(global_dataset)

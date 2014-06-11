@@ -1,11 +1,6 @@
 import numpy as np
-
 from chi2 import Chi2Cov
-
-try:
-    from fastnlo import CRunDec
-except ImportError:
-    from fastnloreader import CRunDec
+from unilibs.fnlo import fastNLOUncertainties
 
 
 class GobalDataSet(object):
@@ -59,17 +54,15 @@ class DataSet(object):
        Source: data, theory, bins, correction_factors
        UncertaintySource: experimental and theoretical uncertainties
     """
-    def __init__(self, data=None, theory=None, sources=None,
-                 label=''):
+    def __init__(self, data=None, theory=None, sources=None, label=''):
 
         # All member attributes
-        self._theory = None
-        self._data = None
         self._label = label
 
         if theory is not None:
-            self.theory = theory
-        self.data = data
+            self._theory = theory
+        if data is not None:
+            self._data = data
         self.scenario = 'all'
         self._uncertainties = {}
         self._bins = {}
@@ -80,6 +73,7 @@ class DataSet(object):
     #
     # nbins
     #
+
     def get_nbins(self):
         return self.data.size
 
@@ -102,17 +96,14 @@ class DataSet(object):
     #
     def set_theory(self, source):
         self._theory = source
-        self._theory.prepare(self)
 
     def get_theory(self):
         """return theory predictions"""
+        #TODO: Implement corrections
         theory = self._theory.get_arr()
         return theory
 
     theory = property(get_theory, set_theory)
-
-    def set_theory_parameters(self, **kwargs):
-        self._theory.set_theory_parameters(**kwargs)
 
     #
     #Data
@@ -125,8 +116,11 @@ class DataSet(object):
 
     data = property(get_data, set_data)
 
-    def _add_source(self, source):
+    def _add_user_module(self, module):
+        self._usermodule = module
 
+    def _add_source(self, source):
+        #TODO: Check if source already exists and throw warning
             if source.origin == 'data':
                 self.data = source
             elif source.origin == 'theory':
@@ -229,6 +223,32 @@ class DataSet(object):
         return chi2_calculator.get_chi2()
 
 
+class FastNLODataset(DataSet):
+
+    def __init__(self, fastnlo_table, pdfset, data=None, theory=None, sources=None, label=''):
+        super(self, FastNLODataset).__init__(data, theory, sources, label)
+        self._fastnlo_table = fastnlo_table
+        self._pdfset = pdfset
+
+        self._alphasmz = 0.1180
+
+        self._fnlo = fastNLOUncertainties(self._fastnlo_table, self._pdfset)
+
+    def set_theory_parameters(self):
+
+        self._calculate_theory()
+
+    def _calculate_theory(self):
+        self._theory = Source(self._fnlo.get_central_crosssection(), label='xsnlo', origin='theo')
+        self._add_source(UncertaintySource(cov_matrix=self._fnlo.get_pdf_cov_matrix(),
+                                           label='pdf_uncert',
+                                           origin='theo_uncert'))
+        self._add_source(UncertaintySource(arr=self._fnlo.get_scale_uncert(),
+                                           label='pdf_uncert',
+                                           origin='theo_uncert',
+                                           corr_type='corr'))
+
+
 class Source(object):
     """
     Describes sources of various quantities like data, theory,
@@ -248,7 +268,7 @@ class Source(object):
         self._origin = None
         self._label = None
 
-        # Iniatialize member variables
+        # Initialize member variables
         self._arr = arr
         self.label = label
         self.origin = origin
@@ -454,55 +474,3 @@ class UncertaintySource(Source):
     def _symmetrize(self):
         """One possibility to symmetrize uncertainty of shape (2,xxx)"""
         return 0.5 * (self._arr[0] + self._arr[1])
-
-
-class TheoryCalculatorSource(Source):
-
-    def __init__(self, asmz=0.1184, mz=91.18, nflavor=5, nloop=4, algo='crundec',
-                 label=None, origin=None):
-        super(TheoryCalculatorSource, self).__init__(None, label=label, origin=origin)
-        self._asmz = asmz
-        self._mz = mz
-        self._nflavor = nflavor
-        self._nloop = nloop
-        self._algo = algo
-        self._qarr = None
-        self._calc_asqarr = np.vectorize(self._calc_asq)
-
-    def prepare(self, dataset):
-        qarr = dataset.get_source('q').get_arr()
-        self._qarr = qarr
-
-    def set_qarr(self, qarr):
-        self._qarr = qarr
-
-    def set_asmz(self, asmz):
-        self._asmz = asmz
-
-    def set_mz(self, mz):
-        self._mz = mz
-
-    def set_nflavor(self, nflavor):
-        self._nflavor = nflavor
-
-    def set_nloop(self, nloop):
-        self._nloop = nloop
-
-    def set_theory_parameters(self, asmz=None, mz=None, nflavor=None, nloop=None):
-
-        if asmz is not None:
-            self._asmz = asmz
-        if mz is not None:
-            self._asmz = asmz
-        if nflavor is not None:
-            self._asmz = asmz
-        if nloop is not None:
-            self._asmz = asmz
-
-    def _calc_asq(self, q):
-        crundec = CRunDec()
-        asq = crundec.AlphasExact(self._asmz, self._mz, q, self._nflavor, self._nloop)
-        return asq
-
-    def get_arr(self):
-        return self._calc_asqarr(self._qarr)

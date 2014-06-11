@@ -1,60 +1,22 @@
 import os
 import numpy as np
 import StringIO
+from abc import ABCMeta, abstractmethod
 
 from measurement import Source, UncertaintySource
 from measurement import DataSet
 from configobj import ConfigObj
 
 
-class DataSetProvider(object):
-    def __init__(self, filename):
+class Provider(metaclass=ABCMeta):
 
-        self.sources = []
-        self._array_dict = None
-        self._dataset_config = None
+    def __init__(self):
+        self._arr_dict = {}
+        pass
 
-        self._dataset_path = os.path.join('data/', filename)
-        self._read_datafile()
-        self._parse_arraydict()
-
+    @abstractmethod
     def get_dataset(self):
-        return DataSet(sources=self.sources, label=self._dataset_config['config']['short_label'])
-
-    def _read_datafile(self):
-        #Split into two file objects
-        configfile = StringIO.StringIO()
-        datafile = StringIO.StringIO()
-        with open(self._dataset_path) as f:
-            file_input = f.readlines()
-
-        config_part = True
-        for line in file_input:
-            if '[data]' in line:
-                config_part = False
-                continue
-            if config_part:
-                configfile.write(line)
-            else:
-                datafile.write(line)
-        configfile.seek(0)
-        datafile.seek(0)
-
-        config = ConfigObj(configfile)
-        data = np.genfromtxt(datafile, names=True)
-
-        configfile.close()
-        datafile.close()
-
-        arr_dict = dict()
-        for i in data.dtype.names:
-            if data[i].ndim == 1:
-                arr_dict[i] = np.array(data[i])
-            elif data[i].ndim == 0:
-                arr_dict[i] = np.array([data[i]])
-
-        self._dataset_config = config
-        self._array_dict = arr_dict
+        pass
 
     def _parse_arraydict(self):
         #for label, item in self._array_dict.items():
@@ -101,4 +63,59 @@ class DataSetProvider(object):
                 self.sources.append(uncertainty_source)
             else:
                 print "Omitting unknown source {} of origin {}.".format(label, origin)
+
+
+class DataProvider(Provider):
+
+    def __init__(self, filename):
+        super(self, DataProvider).__init__()
+        self.sources = []
+        self._array_dict = None
+        self._dataset_config = None
+
+        self._dataset_path = os.path.join('data/', filename)
+        self._read_datafile()
+        self._parse_arraydict()
+
+    def get_dataset(self):
+        return DataSet(sources=self.sources, label=self._dataset_config['config']['plot_label'])
+
+    def get_dataset_config(self):
+        return self._dataset_config
+
+    def _read_datafile(self):
+        #Split into two file objects
+        configfile = StringIO.StringIO()
+        datafile = StringIO.StringIO()
+        with open(self._dataset_path) as f:
+            file_input = f.readlines()
+
+        config_part = True
+        for line in file_input:
+            if '[data]' in line:
+                config_part = False
+                continue
+            if config_part:
+                configfile.write(line)
+            else:
+                datafile.write(line)
+        configfile.seek(0)
+        datafile.seek(0)
+
+        config = ConfigObj(configfile)
+        data = np.genfromtxt(datafile, names=True)
+
+        configfile.close()
+        datafile.close()
+
+        arr_dict = dict()
+        for i in data.dtype.names:
+            if data[i].ndim == 1:
+                arr_dict[i] = np.array(data[i])
+            # Special case scalar value
+            elif data[i].ndim == 0:
+                arr_dict[i] = np.array([data[i]])
+
+        self._dataset_config = config
+        self._arr_dict = arr_dict
 
