@@ -5,7 +5,7 @@ import argparse
 import logging
 
 #import numpy
-from src.fitter import perform_fit, plot
+from src.alphas import perform_fit, plot
 
 
 # Initialize logger
@@ -14,17 +14,18 @@ logger = logging.getLogger()
 
 
 def main():
+
     # Parse args
-    logger.info('Parsing command line args')
+    logger.debug('Parsing command line args')
 
     # Parent
     parent_parser = argparse.ArgumentParser(add_help=False, prog='PROG')
     parent_parser.add_argument('-c', '--config', help='Analysis config', required=True)
+
     # Fitting
     parser = argparse.ArgumentParser(add_help=False, prog='PROG')
     subparsers = parser.add_subparsers()
-    parser_fit = subparsers.add_parser('fit', help='Do the Fit',
-                                       parents=[parent_parser])
+    parser_fit = subparsers.add_parser('fit', help='Do the Fit', parents=[parent_parser])
     parser_fit.set_defaults(func=perform_fit)
 
     # Plotting
@@ -38,11 +39,9 @@ def main():
     # Save all commandline arguments in dict
     kwargs = vars(parser.parse_args())
 
-    logger.debug("Command line arguments:")
-    logger.debug(str(kwargs))
-
     # Call desired function with all supplied keyword arguments
-    kwargs['func'](**kwargs)
+    if kwargs['func']:
+        kwargs['func'](**kwargs)
 
 
 if __name__ == '__main__':

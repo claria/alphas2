@@ -24,12 +24,12 @@ def perform_fit(**kwargs):
         dataset_provider = DataProvider(dataset_filename)
         dataset_config = dataset_provider.get_dataset_config()
         dataset = dataset_provider.get_dataset()
-        # Add user defined theory calculation source
-        theory_module = TheoryModule(dataset_config)
-        dataset.add_module(theory_module)
 
         global_dataset.add_dataset(dataset)
 
+
+    import sys
+    sys.exit(0)
     fit = AlphasFitter(global_dataset)
     fit.do_fit()
     fit.save_result()

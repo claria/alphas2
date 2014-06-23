@@ -1,8 +1,6 @@
 import os
-import numpy as np
 import matplotlib.pyplot as plt
 
-from measurement import TheoryCalculatorSource
 from unilibs.baseplot import BasePlot
 
 
@@ -24,16 +22,6 @@ class AlphasRunningPlot(BasePlot):
     def produce(self):
         # Plot theory
         theory_path = os.path.join('output/', 'Result.txt')
-        asmz_result = np.genfromtxt(theory_path, names=True)
-        theory = TheoryCalculatorSource(label='theory', origin='theory')
-        theory.set_asmz(float(asmz_result['asq']))
-        theory_qarr = np.linspace(10, 1200, 100)
-        theory.set_qarr(theory_qarr)
-        self.ax.plot(theory_qarr, theory.get_arr(), color='yellow')
-        theory.set_asmz(asmz_result['asq'] + asmz_result['tot_h'])
-        self.ax.plot(theory_qarr, theory.get_arr(), color='green')
-        theory.set_asmz(asmz_result['asq'] - asmz_result['tot_l'])
-        self.ax.plot(theory_qarr, theory.get_arr(), color='green')
 
         # Plot datasets
         for dataset in self._datasets:

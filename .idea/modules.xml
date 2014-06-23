@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/as_running.iml" filepath="$PROJECT_DIR$/.idea/as_running.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/alphas2.iml" filepath="$PROJECT_DIR$/.idea/alphas2.iml" />
     </modules>
   </component>
 </project>

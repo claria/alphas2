@@ -1,76 +1,19 @@
 import os
 import numpy as np
 import StringIO
-from abc import ABCMeta, abstractmethod
 
 from measurement import Source, UncertaintySource
-from measurement import DataSet
+from measurement import FastNLODataset
 from configobj import ConfigObj
+import config
 
 
-class Provider(metaclass=ABCMeta):
-
-    def __init__(self):
-        self._arr_dict = {}
-        pass
-
-    @abstractmethod
-    def get_dataset(self):
-        pass
-
-    def _parse_arraydict(self):
-        #for label, item in self._array_dict.items():
-        for label in self._dataset_config['description']:
-            # Symmetric uncertainty source
-            if label in self._array_dict:
-                item = self._array_dict[label]
-            # Asymmetric uncertainty source
-            elif ("{}_l".format(label) in self._array_dict) and \
-                 ("{}_h".format(label) in self._array_dict):
-                item = np.vstack((self._array_dict["{}_l".format(label)],
-                                  self._array_dict["{}_h".format(label)]))
-            else:
-                raise Exception("Requested source not found in datafile.")
-
-            origin = self._dataset_config['description'][label]
-            if origin in ['bin', 'data_correction', 'theo_correction', 'data', 'theory']:
-                source = Source(label=label, arr=item, origin=origin)
-                self.sources.append(source)
-            elif origin in ['exp_uncert', 'theo_uncert']:
-                corr_type = self._dataset_config['corr_type'][label]
-                if corr_type in ['corr', 'uncorr'] or corr_type.startswith('corr'):
-                    uncertainty_source = UncertaintySource(origin=origin,
-                                                           arr=item,
-                                                           label=label,
-                                                           corr_type=corr_type)
-                elif corr_type == 'bintobin':
-                    if 'cov_' + label in self._array_dict:
-                        uncertainty_source = UncertaintySource(origin=origin,
-                                                               cov_matrix=self._array_dict[
-                                                                   'cov_' + label],
-                                                               label=label,
-                                                               corr_type=corr_type)
-                    elif 'cor_' + label in self._array_dict:
-                        uncertainty_source = UncertaintySource(origin=origin,
-                                                               arr=item,
-                                                               corr_matrix=
-                                                               self._array_dict[
-                                                                   'cor_' + label],
-                                                               label=label,
-                                                               corr_type=corr_type)
-                else:
-                    raise Exception('Correlation type not known: {}'.format(corr_type))
-                self.sources.append(uncertainty_source)
-            else:
-                print "Omitting unknown source {} of origin {}.".format(label, origin)
-
-
-class DataProvider(Provider):
+class DataProvider(object):
 
     def __init__(self, filename):
-        super(self, DataProvider).__init__()
+        super(DataProvider, self).__init__()
         self.sources = []
-        self._array_dict = None
+        self._arr_dict = None
         self._dataset_config = None
 
         self._dataset_path = os.path.join('data/', filename)
@@ -78,7 +21,10 @@ class DataProvider(Provider):
         self._parse_arraydict()
 
     def get_dataset(self):
-        return DataSet(sources=self.sources, label=self._dataset_config['config']['plot_label'])
+        fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
+        pdfset = 'CT10nlo.LHgrid'
+        return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
+                              label=self._dataset_config['config']['short_label'])
 
     def get_dataset_config(self):
         return self._dataset_config
@@ -119,3 +65,48 @@ class DataProvider(Provider):
         self._dataset_config = config
         self._arr_dict = arr_dict
 
+    def _parse_arraydict(self):
+        #for label, item in self._arr_dict.items():
+        for label in self._dataset_config['data_description'].keys():
+            # Symmetric uncertainty source
+            if label in self._arr_dict:
+                item = self._arr_dict[label]
+            # Asymmetric uncertainty source
+            elif ("{}_l".format(label) in self._arr_dict) and \
+                 ("{}_h".format(label) in self._arr_dict):
+                item = np.vstack((self._arr_dict["{}_l".format(label)],
+                                  self._arr_dict["{}_h".format(label)]))
+            else:
+                raise Exception("Requested source not found in datafile.")
+
+            origin = self._dataset_config['data_description'][label]
+            if origin in ['bin', 'data_correction', 'theo_correction', 'data', 'theory']:
+                source = Source(label=label, arr=item, origin=origin)
+                self.sources.append(source)
+            elif origin in ['exp_uncert', 'theo_uncert']:
+                corr_type = self._dataset_config['corr_type'][label]
+                if corr_type in ['corr', 'uncorr'] or corr_type.startswith('corr'):
+                    uncertainty_source = UncertaintySource(origin=origin,
+                                                           arr=item,
+                                                           label=label,
+                                                           corr_type=corr_type)
+                elif corr_type == 'bintobin':
+                    if 'cov_' + label in self._arr_dict:
+                        uncertainty_source = UncertaintySource(origin=origin,
+                                                               cov_matrix=self._arr_dict[
+                                                                   'cov_' + label],
+                                                               label=label,
+                                                               corr_type=corr_type)
+                    elif 'cor_' + label in self._arr_dict:
+                        uncertainty_source = UncertaintySource(origin=origin,
+                                                               arr=item,
+                                                               corr_matrix=
+                                                               self._arr_dict[
+                                                                   'cor_' + label],
+                                                               label=label,
+                                                               corr_type=corr_type)
+                else:
+                    raise Exception('Correlation type not known: {}'.format(corr_type))
+                self.sources.append(uncertainty_source)
+            else:
+                print "Omitting unknown source {} of origin {}.".format(label, origin)

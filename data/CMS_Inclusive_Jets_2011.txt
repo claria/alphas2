@@ -1,6 +1,6 @@
 [config]
 label = 'CMS Inclusive Jet measurement 2011'
-plot_label = 'CMS Incl. Jets 2011'
+short_label = 'CMS Incl. Jets 2011'
 reference = 'abc'
 theory_table = fnl2332d.tab
 
@@ -9,7 +9,7 @@ ylow  = bin
 yhigh = bin
 ptlow = bin
 pthigh = bin
-xs    = xs
+xs    = data
 stat  = stat
 
 [data_uncertainties]
