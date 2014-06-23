@@ -1,6 +1,5 @@
 # Python, np, scipy modules
 import os
-import numpy as np
 from scipy.optimize import minimize_scalar, brentq
 from plotting import AlphasRunningPlot
 from ext.configobj import ConfigObj
@@ -27,32 +26,30 @@ def perform_fit(**kwargs):
 
         global_dataset.add_dataset(dataset)
 
-
-    import sys
-    sys.exit(0)
-    fit = AlphasFitter(global_dataset)
-    fit.do_fit()
-    fit.save_result()
-    print fit._asmz_fit
-    print fit._asmz_fit_uncert
+    print global_dataset.get_chi2()
+    # fit = AlphasFitter(global_dataset)
+    # fit.do_fit()
+    # fit.save_result()
+    # print fit._asmz_fit
+    # print fit._asmz_fit_uncert
 
 
 def plot(**kwargs):
     """Produce the interesting plots, dependent on set commandline options"""
     # read confi
-    analysis_config = ConfigObj(kwargs['config'])
+    # analysis_config = ConfigObj(kwargs['config'])
     # read all datasets
-    datasets_filenames = analysis_config['datasets'].as_list('dataset_filenames')
-
-    datasets = []
-    for dataset_filename in datasets_filenames:
-        dataset_provider = DataSetProvider(dataset_filename)
-        dataset = dataset_provider.get_dataset()
-        datasets.append(dataset)
-
-    as_plot = AlphasRunningPlot(datasets)
-    as_plot.do_plot()
-
+    # datasets_filenames = analysis_config['datasets'].as_list('dataset_filenames')
+    #
+    # datasets = []
+    # for dataset_filename in datasets_filenames:
+    #     dataset_provider = DataSetProvider(dataset_filename)
+    #     dataset = dataset_provider.get_dataset()
+    #     datasets.append(dataset)
+    #
+    # as_plot = AlphasRunningPlot(datasets)
+    # as_plot.do_plot()
+    pass
 
 # def get_chi2(data, theory, cov_matrix):
 #     """Simple definition to calculate chi2 using covariance matrix."""

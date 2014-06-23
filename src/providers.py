@@ -6,6 +6,8 @@ from measurement import Source, UncertaintySource
 from measurement import FastNLODataset
 from configobj import ConfigObj
 import config
+import logging
+logger = logging.getLogger(__name__)
 
 
 class DataProvider(object):
@@ -56,18 +58,15 @@ class DataProvider(object):
 
         arr_dict = dict()
         for i in data.dtype.names:
-            if data[i].ndim == 1:
-                arr_dict[i] = np.array(data[i])
-            # Special case scalar value
-            elif data[i].ndim == 0:
-                arr_dict[i] = np.array([data[i]])
+            arr_dict[i] = np.atleast_1d(data[i])
 
         self._dataset_config = config
         self._arr_dict = arr_dict
 
     def _parse_arraydict(self):
         #for label, item in self._arr_dict.items():
-        for label in self._dataset_config['data_description'].keys():
+        for label, origin in self._dataset_config['data_description'].items():
+            # origin = self._dataset_config['data_description'][label]
             # Symmetric uncertainty source
             if label in self._arr_dict:
                 item = self._arr_dict[label]
@@ -76,37 +75,61 @@ class DataProvider(object):
                  ("{}_h".format(label) in self._arr_dict):
                 item = np.vstack((self._arr_dict["{}_l".format(label)],
                                   self._arr_dict["{}_h".format(label)]))
+            # Source can be added later on the fly. Dummy will be added for now.
+            elif origin == 'theo_uncert':
+                pass
             else:
-                raise Exception("Requested source not found in datafile.")
+                raise Exception("Requested source \"{}\" not found in datafile.".format(label))
 
-            origin = self._dataset_config['data_description'][label]
             if origin in ['bin', 'data_correction', 'theo_correction', 'data', 'theory']:
                 source = Source(label=label, arr=item, origin=origin)
                 self.sources.append(source)
             elif origin in ['exp_uncert', 'theo_uncert']:
-                corr_type = self._dataset_config['corr_type'][label]
+                if label in self._dataset_config['corr_type']:
+                    corr_type = self._dataset_config['corr_type'][label]
+                else:
+                    logger.debug("No correlation type supplied for source \"{}\".".format(label))
+                    corr_type = None
+
+                if label in self._dataset_config['error_scaling']:
+                    error_scaling = self._dataset_config['error_scaling'][label]
+                else:
+                    error_scaling = None
+
                 if corr_type in ['corr', 'uncorr'] or corr_type.startswith('corr'):
                     uncertainty_source = UncertaintySource(origin=origin,
                                                            arr=item,
                                                            label=label,
-                                                           corr_type=corr_type)
+                                                           corr_type=corr_type,
+                                                           error_scaling=error_scaling)
                 elif corr_type == 'bintobin':
+                    print "dddd"
+                    print label
                     if 'cov_' + label in self._arr_dict:
                         uncertainty_source = UncertaintySource(origin=origin,
-                                                               cov_matrix=self._arr_dict[
-                                                                   'cov_' + label],
+                                                               cov_matrix=self._arr_dict['cov_' + label],
                                                                label=label,
-                                                               corr_type=corr_type)
+                                                               corr_type=corr_type,
+                                                               error_scaling=error_scaling)
                     elif 'cor_' + label in self._arr_dict:
                         uncertainty_source = UncertaintySource(origin=origin,
                                                                arr=item,
-                                                               corr_matrix=
-                                                               self._arr_dict[
-                                                                   'cor_' + label],
+                                                               corr_matrix=self._arr_dict['cor_' + label],
                                                                label=label,
-                                                               corr_type=corr_type)
+                                                               corr_type=corr_type,
+                                                               error_scaling=error_scaling)
+                    # Add dummy source, which needs to be overwritten later.
+                    elif origin == 'theo_uncert':
+                        uncertainty_source = UncertaintySource(origin=origin,
+                                                               cov_matrix=np.atleast_2d(0.),
+                                                               label=label,
+                                                               corr_type=corr_type,
+                                                               error_scaling=error_scaling)
+
+                    else:
+                        raise ValueError('No array or covariance matrix found for source \"{}\"'.format(label))
                 else:
-                    raise Exception('Correlation type not known: {}'.format(corr_type))
+                    raise ValueError('Correlation type \"{}\" not known.'.format(corr_type))
                 self.sources.append(uncertainty_source)
             else:
-                print "Omitting unknown source {} of origin {}.".format(label, origin)
+                raise ValueError("Source \"{}\" is of unknown origin \"{}\".".format(label, origin))

@@ -174,7 +174,6 @@ class DataSet(object):
 
     def get_cov_matrix(self, corr_type=None, origin=None, label=None):
         cov_matrix = np.zeros((self.nbins, self.nbins))
-
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
                 if uncertainty.corr_type not in corr_type:
@@ -224,7 +223,7 @@ class DataSet(object):
          # Apply corrections
         if new_src.origin not in ('data', 'theory'):
             raise ValueError('Only data or theory can be corrected at the moment.')
-        for correction in self._corrections:
+        for correction in self._corrections.values():
             if new_src.origin == 'data' and correction.origin == 'data_correction':
                 new_src *= correction.get_arr()
             if new_src.origin == 'theory' and correction.origin == 'theo_correction':
@@ -237,7 +236,7 @@ class DataSet(object):
        # Apply rescaling of uncertainty
         if new_src.origin not in ('exp_uncert', 'theo_uncert'):
             raise ValueError("Only exp and theo uncertainties can be rescaled at the moment.")
-        if new_src.error_scaling is None:
+        if new_src.error_scaling is None or new_src.error_scaling == 'none':
             pass
         elif new_src.error_scaling == 'additive':
             pass
@@ -268,14 +267,15 @@ class FastNLODataset(DataSet):
 
     def _calculate_theory(self):
         self._theory = Source(self._fnlo.get_central_crosssection(), label='xsnlo', origin='theory')
-        self._add_source(UncertaintySource(cov_matrix=self._fnlo.get_pdf_cov_matrix(),
-                                           label='pdf_uncert',
-                                           origin='theo_uncert'))
-        self._add_source(UncertaintySource(arr=self._fnlo.get_scale_uncert(),
-                                           label='pdf_uncert',
-                                           origin='theo_uncert',
-                                           corr_type='corr'))
-        print "didit"
+        # Overwrite source, if existing, with current calculation
+        if "pdf_uncert" in self._uncertainties.keys():
+            self._add_source(UncertaintySource(cov_matrix=self._fnlo.get_pdf_cov_matrix(),
+                                               label='pdf_uncert',
+                                               origin='theo_uncert'))
+        # self._add_source(UncertaintySource(arr=self._fnlo.get_scale_uncert(),
+        #                                    label='pdf_uncert',
+        #                                    origin='theo_uncert',
+        #                                    corr_type='corr'))
 
 
 class Source(object):
@@ -448,10 +448,10 @@ class UncertaintySource(Source):
             # TODO: Catch divison by zero if diagonal elements are zero
             # Throws a waring at the moment.
             arr = np.sqrt(cov_matrix.diagonal())
-            self._arr = np.vstack((arr, arr))
+            arr = np.vstack((arr, arr))
             if corr_matrix is not None:
                 raise Exception('No corr_matrix may be provided if a cov matrix is given.')
-            corr_matrix = cov_matrix / np.outer(self._arr[0], self._arr[0])
+            corr_matrix = cov_matrix / np.outer(arr[0], arr[0])
             # A bit hacky...
             corr_matrix[np.isnan(corr_matrix)] = 0.
             if corr_type is None:
@@ -464,8 +464,6 @@ class UncertaintySource(Source):
         if corr_type is not None and corr_type != 'bintobin':
             self.set_correlation_matrix(corr_type=corr_type)
         elif corr_matrix is not None:
-            print corr_matrix
-            print corr_type
             self.set_correlation_matrix(corr_matrix=corr_matrix)
         else:
             raise Exception('Either corr_matrix or corr_type must be provided.')
@@ -475,6 +473,8 @@ class UncertaintySource(Source):
     #######
 
     def get_arr(self, symmetric=True):
+        if not self._arr.ndim == 2:
+            raise ValueError("Uncertainty source diagonal elements need to be 2d.")
         if symmetric is True:
             return 0.5 * (self._arr[0] + self._arr[1])
         else:
