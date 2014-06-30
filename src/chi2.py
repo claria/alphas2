@@ -1,8 +1,10 @@
 import os
 import numpy as np
+from abc import ABCMeta, abstractmethod
 
 
 class Chi2(object):
+    __metaclass__ = ABCMeta
 
     def __init__(self, measurement=None):
         self._chi2 = 0.0
@@ -14,8 +16,9 @@ class Chi2(object):
         self._calculate_chi2()
         return self._chi2
 
+    @abstractmethod
     def _calculate_chi2(self):
-        raise NotImplementedError
+        pass
 
 
 class Chi2Cov(Chi2):

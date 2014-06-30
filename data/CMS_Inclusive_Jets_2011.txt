@@ -34,7 +34,7 @@ PileUpBias = exp_uncert
 RelativeStatHF = exp_uncert
 RelativeJERC1 = exp_uncert
 RelativeFSR = exp_uncert
-pdf_uncert = theo_uncert
+# pdf_uncert = theo_uncert
 
 [corr_type]
 stat  = uncorr
@@ -65,27 +65,27 @@ pdf_uncert  = bintobin
 [error_scaling]
 stat  = none
 uncor = none
-lumierr = multiplicative
-unf_err = multiplicative
-High_PT_EXTR = multiplicative
-FLAVOUR = multiplicative
-RelativeStatEC2 = multiplicative
-RelativeJERCHF = multiplicative
-RelativeJERC2 = multiplicative
-PileUpJetRate = multiplicative
-PileUpPt = multiplicative
-SINGLE_PION_0005 = multiplicative
-SINGLE_PION_BAR = multiplicative
-SINGLE_PION_END = multiplicative
-SINGLE_PION_0510 = multiplicative
-SINGLE_PION_1015 = multiplicative
-PileUpDataMC = multiplicative
-PileUpOOT = multiplicative
-TIME = multiplicative
-PileUpBias = multiplicative
-RelativeStatHF = multiplicative
-RelativeJERC1 = multiplicative
-RelativeFSR = multiplicative
+lumierr = additive
+unf_err = additive
+High_PT_EXTR = additive
+FLAVOUR = additive
+RelativeStatEC2 = additive
+RelativeJERCHF = additive
+RelativeJERC2 = additive
+PileUpJetRate = additive
+PileUpPt = additive
+SINGLE_PION_0005 = additive
+SINGLE_PION_BAR = additive
+SINGLE_PION_END = additive
+SINGLE_PION_0510 = additive
+SINGLE_PION_1015 = additive
+PileUpDataMC = additive
+PileUpOOT = additive
+TIME = additive
+PileUpBias = additive
+RelativeStatHF = additive
+RelativeJERC1 = additive
+RelativeFSR = additive
 pdf_uncert = none
 
 [data]

@@ -1,6 +1,6 @@
 import numpy as np
 from chi2 import Chi2Cov
-from unilibs.fnlo import fastNLOUncertainties
+from fnlo import fastNLOUncertaintiesAlphas
 from copy import deepcopy
 
 
@@ -258,18 +258,27 @@ class FastNLODataset(DataSet):
         self._fastnlo_table = fastnlo_table
         self._pdfset = pdfset
 
+        self._mz = 91.1876
         self._alphasmz = 0.1180
-        self._fnlo = fastNLOUncertainties(self._fastnlo_table, self._pdfset)
+        self._fnlo = fastNLOUncertaintiesAlphas(self._fastnlo_table, self._pdfset)
         self._calculate_theory()
 
-    def set_theory_parameters(self):
+    def set_theory_parameters(self, alphasmz=None, mz=None):
+        if alphasmz is not None:
+            self._alphasmz = alphasmz
+            self._fnlo.set_alphasmz(alphasmz)
+        if mz is not None:
+            self._mz = mz
+            self._fnlo.set_mz(mz)
         self._calculate_theory()
 
     def _calculate_theory(self):
-        self._theory = Source(self._fnlo.get_central_crosssection(), label='xsnlo', origin='theory')
+        xsnlo = self._fnlo.get_central_crosssection()
+        self._theory = Source(xsnlo, label='xsnlo', origin='theory')
         # Overwrite source, if existing, with current calculation
-        if "pdf_uncert" in self._uncertainties.keys():
-            self._add_source(UncertaintySource(cov_matrix=self._fnlo.get_pdf_cov_matrix(),
+        if 'pdf_uncert' in self._uncertainties.keys():
+            cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
+            self._add_source(UncertaintySource(cov_matrix=cov_pdf_uncert,
                                                label='pdf_uncert',
                                                origin='theo_uncert'))
         # self._add_source(UncertaintySource(arr=self._fnlo.get_scale_uncert(),

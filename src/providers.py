@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 class DataProvider(object):
 
-    def __init__(self, filename):
-        super(DataProvider, self).__init__()
+    def __init__(self, filename, global_config):
         self.sources = []
         self._arr_dict = None
         self._dataset_config = None
+        self._global_config = global_config
 
         self._dataset_path = os.path.join('data/', filename)
         self._read_datafile()
@@ -24,7 +24,7 @@ class DataProvider(object):
 
     def get_dataset(self):
         fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
-        pdfset = 'CT10nlo.LHgrid'
+        pdfset = self._global_config['pdfset']
         return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
                               label=self._dataset_config['config']['short_label'])
 
@@ -103,8 +103,6 @@ class DataProvider(object):
                                                            corr_type=corr_type,
                                                            error_scaling=error_scaling)
                 elif corr_type == 'bintobin':
-                    print "dddd"
-                    print label
                     if 'cov_' + label in self._arr_dict:
                         uncertainty_source = UncertaintySource(origin=origin,
                                                                cov_matrix=self._arr_dict['cov_' + label],
