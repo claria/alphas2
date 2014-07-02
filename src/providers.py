@@ -3,7 +3,7 @@ import numpy as np
 import StringIO
 
 from measurement import Source, UncertaintySource
-from measurement import FastNLODataset
+from measurement import FastNLODataset, TestDataset
 from configobj import ConfigObj
 import config
 import logging
@@ -25,7 +25,7 @@ class DataProvider(object):
     def get_dataset(self):
         fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
         pdfset = self._global_config['pdfset']
-        return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
+        return TestDataset(fastnlo_table, pdfset, sources=self.sources,
                               label=self._dataset_config['config']['short_label'])
 
     def get_dataset_config(self):
@@ -66,23 +66,34 @@ class DataProvider(object):
     @staticmethod
     def _parse_identifier(identifier):
         identifier_list = identifier.split(':')
-        out = {'source_type': None,
-               'corr_type': 'uncorr',
-               'error_scaling': None,
-               'source_relation': 'absolute'}
-
-        for item in identifier_list:
+        #out = {'source_type': None,
+        #      'corr_type': 'uncorr',
+        #       'error_scaling': None,
+        #       'source_relation': 'absolute'}
+        out = {}
+        for item in identifier_list[:]:
             # source_type
             if item in ['bin', 'data', 'theory', 'theo_correction', 'data_correction', 'exp_uncert', 'theo_uncert']:
                 out['source_type'] = item
+                identifier_list.remove(item)
+                continue
             # corr_type
-            if item in ['uncorr', 'bintobin', 'corr'] or item.startswith('corr'):
+            if (item in ['uncorr', 'bintobin', 'corr']) or item.startswith('corr'):
                 out['corr_type'] = item
+                identifier_list.remove(item)
+                continue
             # error_scaling
             if item in ['additive', 'multiplicative', 'poisson']:
                 out['error_scaling'] = item
+                identifier_list.remove(item)
+                continue
             if item in ['absolute', 'relative', 'percentage']:
                 out['source_relation'] = item
+                identifier_list.remove(item)
+                continue
+
+        if identifier_list:
+            raise ValueError('Invalid identifiers: {}'.format(identifier_list))
 
         return out
 
@@ -90,7 +101,16 @@ class DataProvider(object):
         #for label, item in self._arr_dict.items():
         for label in self._dataset_config['data_description'].keys():
 
-            prop = self._parse_identifier(self._dataset_config['data_description'][label])
+            # Default properties
+            prop = {'source_type': None,
+                    'corr_type': 'uncorr',
+                    'error_scaling': None,
+                    'source_relation': 'absolute'}
+            try:
+                identifiers = self._parse_identifier(self._dataset_config['data_description'][label])
+            except ValueError as e:
+                raise ValueError("Source {}: {}".format(label, e.message))
+            prop.update(identifiers)
 
             source_type = prop['source_type']
             corr_type = prop['corr_type']
@@ -106,11 +126,11 @@ class DataProvider(object):
             elif ("{}_lo".format(label) in self._arr_dict) and \
                  ("{}_up".format(label) in self._arr_dict):
                 quantity = np.vstack((self._arr_dict["{}_lo".format(label)],
-                                  self._arr_dict["{}_up".format(label)]))
+                                      self._arr_dict["{}_up".format(label)]))
             elif "cov_{}".format(label) in self._arr_dict:
                 quantity = self._arr_dict["cov_{}".format(label)]
             # Dummy quantity is used. Theory qunatity will be calculated later.
-            elif prop['source_type'] == 'theo_uncert':
+            elif prop['source_type'] in ['theory', 'theo_uncert']:
                 quantity = None
             else:
                 raise Exception("Requested source \"{}\" not found in datafile.".format(label))
@@ -147,4 +167,4 @@ class DataProvider(object):
                     raise ValueError('Correlation type \"{}\" not known.'.format(corr_type))
                 self.sources.append(uncertainty_source)
             else:
-                raise ValueError("Source \"{}\" is of unknown source_type \"{}\".".format(label, identifier))
+                raise ValueError("Source \"{}\" is of unknown source_type \"{}\".".format(label, source_type))

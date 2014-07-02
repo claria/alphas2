@@ -25,7 +25,7 @@ class AlphasRunningPlot(BasePlot):
 
         # Plot datasets
         for dataset in self._datasets:
-            x = dataset.get_source(label='q').get_arr()
+            x = dataset.get_scaled_source(label='q').get_arr()
             y = dataset.get_data()
             yerr = dataset.get_diagonal_unc(origin='exp_uncert')
             self.ax.errorbar(x=x, y=y, yerr=yerr, fmt='o', label=dataset.label, zorder=10)

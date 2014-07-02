@@ -208,8 +208,14 @@ class DataSet(object):
 
         return np.sqrt(diag_uncert)
 
-    def get_source(self, label):
-        """Return Observable of given label"""
+    def get_scaled_source(self, label):
+        """Return copy of underlying source with all corrections or scalings applied
+
+        :param label: Name of the source
+        :type label: str
+        :returns: Object with label 'label'
+        :rtype : Source
+        """
         if label == 'data':
             return self._get_corrected(self._data)
         elif label == 'theory':
@@ -218,6 +224,25 @@ class DataSet(object):
             return self._bins[label]
         elif label in self._uncertainties:
             return self._get_scaled(self._uncertainties[label])
+        else:
+            raise Exception('Label not found in sources.')
+
+    def get_source(self, label):
+        """Return copy of underlying source with all corrections or scalings applied
+
+        :param label: Name of the source
+        :type label: str
+        :returns: Object with label 'label'
+        :rtype : Source
+        """
+        if label == 'data':
+            return self._data
+        elif label == 'theory':
+            return self._theory
+        elif label in self._bins:
+            return self._bins[label]
+        elif label in self._uncertainties:
+            return self._uncertainties[label]
         else:
             raise Exception('Label not found in sources.')
 
@@ -276,18 +301,39 @@ class FastNLODataset(DataSet):
         self._calculate_theory()
 
     def _calculate_theory(self):
+
         xsnlo = self._fnlo.get_central_crosssection()
-        self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
+        self.get_source('theory').set_arr(xsnlo)
+        # self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
+
         # Overwrite source, if existing, with current calculation
         if 'pdf_uncert' in self._uncertainties.keys():
+            print "update pdf uncert"
             cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
-            self._add_source(UncertaintySource(arr=cov_pdf_uncert,
-                                               label='pdf_uncert',
-                                               source_type='theo_uncert'))
-        # self._add_source(UncertaintySource(arr=self._fnlo.get_scale_uncert(),
-        #                                    label='pdf_uncert',
-        #                                    source_type='theo_uncert',
-        #                                    corr_type='corr'))
+            self.get_source('pdf_uncert').set_arr(cov_pdf_uncert)
+        if 'scale_uncert' in self._uncertainties.keys():
+            scale_uncert = self._fnlo.get_scale_uncert()
+            self.get_source('scale_uncert').set_arr(scale_uncert)
+
+
+class TestDataset(DataSet):
+
+    def __init__(self, fastnlo_table, pdfset, label, sources=None):
+        super(TestDataset, self).__init__(label, sources)
+
+        self._mz = 91.1876
+        self._alphasmz = 1.
+        self._calculate_theory()
+
+    def set_theory_parameters(self, alphasmz=None):
+        if alphasmz is not None:
+            self._alphasmz = alphasmz
+        self._calculate_theory()
+
+    def _calculate_theory(self):
+
+        theory = np.array([1., 1., 1.]) * self._alphasmz
+        self.get_source('theory').set_arr(theory)
 
 
 class Source(object):
@@ -315,7 +361,7 @@ class Source(object):
             exp_uncert, theo_uncert:
                 experimental or theoretical uncertainty source
     """
-    def __init__(self, arr, label=None, source_type=None):
+    def __init__(self, arr=None, label=None, source_type=None):
 
         # All member attributes
         self._arr = None
@@ -424,62 +470,82 @@ class UncertaintySource(Source):
         # 1. cov given, corr type
         # 2. arr given,  corr_type
         # 3. arr given,  corr_matrix
+        super(UncertaintySource, self).__init__(label=label, source_type=source_type)
+
+        print "#################"
+        print label
+        print corr_type
+        print corr_matrix
 
         # All member attributes
         self._corr_matrix = None
         self._corr_type = None
+
         # Is it a source_relation or absolute uncertainty source
         self._source_relation = source_relation
         self._error_scaling = error_scaling
-
-        # Either covariance matrix or diagonal elements must be provided.
-        if arr is None:
-            raise Exception(('Either diagonal uncertainty or covariance matrix'
-                             'must be provided for source {}.').format(label))
-
-        # TODO: Check if arr is a 1-dim source, a-dim asymmetric source or a nxn cov_matrix
 
         # Convert arr into numpy array if not None
         if not isinstance(arr, np.ndarray):
             arr = np.array(arr)
 
+        self.set_arr(arr)
+
+        if corr_type is None and corr_matrix is None:
+            raise ValueError(('Neither a covariance matrix nor a correlation matrix" '
+                              ' or corr_type is provided for source {}.').format(label))
+
+
+        # No covariance matrix given, but correlation matrix given
+        if corr_type is not None and corr_type != 'bintobin':
+            self.set_corr_matrix(corr_type=corr_type)
+        elif corr_matrix:
+            self.set_corr_matrix(corr_matrix)
+        elif (corr_type == 'bintobin') and (corr_matrix is None):
+            if self._is_covmatrix(arr):
+                diag = arr.diagonal()
+                corr_matrix = arr / np.outer(diag, diag)
+                corr_matrix[np.isnan(corr_matrix)] = 0.
+                self.set_corr_matrix(corr_matrix)
+        else:
+            raise Exception('Source {}: Either corr_matrix or corr_type must be provided.'.format(self._label))
+
+    #######
+    # arr #
+    #######
+
+    @staticmethod
+    def _is_covmatrix(arr):
+        if (arr.ndim == 2) and (arr.transpose() == arr).all():
+            return True
+        return False
+
+    def set_arr(self, arr):
+        # Either covariance matrix or diagonal elements must be provided.
+        if arr is None:
+            raise Exception(('Either diagonal uncertainty or covariance matrix'
+                             'must be provided for source {}.').format(self._label))
+
+        # TODO: Check if arr is a 1-dim source, a-dim asymmetric source or a nxn cov_matrix
         if arr.ndim == 1:
             arr = np.vstack((arr, arr))
         elif arr.ndim == 2:
             #Check if arr is symmetric --> means covariance matrix
-            if (arr.transpose() == arr).all():
-                # Extract diagonal elements from covariance matrix
+            if self._is_covmatrix(arr):
                 # TODO: Catch divison by zero if diagonal elements are zero
                 diag = np.sqrt(arr.diagonal())
                 corr_matrix = arr / np.outer(diag, diag)
                 corr_matrix[np.isnan(corr_matrix)] = 0.
+                self.set_corr_matrix(corr_matrix)
+
                 arr = np.vstack((diag, diag))
-                if corr_type is None:
-                    corr_type = 'bintobin'
             else:
                 # Already have a asymmetric 2d source.
                 pass
         else:
             raise Exception('A 1-dim or 2-dim array must be provided.')
 
-        if corr_type is None and corr_matrix is None:
-            raise ValueError(('Neither a covariance matrix nor a correlation matrix" '
-                              ' or corr_type is provided for source {}.').format(label))
-
-        # Call super __init__ with constructed array
-        super(UncertaintySource, self).__init__(arr=arr, label=label, source_type=source_type)
-
-        # No covariance matrix given, but correlation matrix given
-        if corr_type is not None and corr_type != 'bintobin':
-            self.set_correlation_matrix(corr_type=corr_type)
-        elif corr_matrix is not None:
-            self.set_correlation_matrix(corr_matrix=corr_matrix)
-        else:
-            raise Exception('Either corr_matrix or corr_type must be provided.')
-
-    #######
-    # arr #
-    #######
+        self._arr = arr
 
     def get_arr(self, symmetric=True):
         if not self._arr.ndim == 2:
@@ -528,7 +594,7 @@ class UncertaintySource(Source):
     # correlation matrix #
     ######################
 
-    def set_correlation_matrix(self, corr_matrix=None, corr_type=None):
+    def set_corr_matrix(self, corr_matrix=None, corr_type=None):
         if corr_matrix is not None:
             self._corr_matrix = corr_matrix
         elif corr_type is not None:
@@ -551,10 +617,10 @@ class UncertaintySource(Source):
         else:
             raise Exception('Either corr_matrix or corr_type must be provided.')
 
-    def get_correlation_matrix(self):
+    def get_corr_matrix(self):
         return self._corr_matrix
 
-    corr_matrix = property(get_correlation_matrix, set_correlation_matrix)
+    corr_matrix = property(get_corr_matrix, set_corr_matrix)
 
     ####################
     # Correlation type #

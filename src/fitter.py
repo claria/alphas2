@@ -28,7 +28,7 @@ class MinuitFitter(AlphasFitter):
            Here a basically the chi2 of the datasets is minimized by taking into account all correlations
            between different datasets and within the datasets themselves.
         """
-        # self._dataset.set_theory_parameters(alphasmz=kwargs['asmz'])
+        print self._dataset.get_chi2(), asmz
         self._dataset.set_theory_parameters(alphasmz=asmz)
         return self._dataset.get_chi2()
 
@@ -40,5 +40,6 @@ class MinuitFitter(AlphasFitter):
         m.migrad()
         self.values = m.values
         self.errors = m.errors
+        m.minos()
         # self._calc_par_uncert()
 
