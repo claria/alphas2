@@ -63,71 +63,88 @@ class DataProvider(object):
         self._dataset_config = config
         self._arr_dict = arr_dict
 
+    @staticmethod
+    def _parse_identifier(identifier):
+        identifier_list = identifier.split(':')
+        out = {'source_type': None,
+               'corr_type': 'uncorr',
+               'error_scaling': None,
+               'source_relation': 'absolute'}
+
+        for item in identifier_list:
+            # source_type
+            if item in ['bin', 'data', 'theory', 'theo_correction', 'data_correction', 'exp_uncert', 'theo_uncert']:
+                out['source_type'] = item
+            # corr_type
+            if item in ['uncorr', 'bintobin', 'corr'] or item.startswith('corr'):
+                out['corr_type'] = item
+            # error_scaling
+            if item in ['additive', 'multiplicative', 'poisson']:
+                out['error_scaling'] = item
+            if item in ['absolute', 'relative', 'percentage']:
+                out['source_relation'] = item
+
+        return out
+
     def _parse_arraydict(self):
         #for label, item in self._arr_dict.items():
-        for label, origin in self._dataset_config['data_description'].items():
-            # origin = self._dataset_config['data_description'][label]
-            # Symmetric uncertainty source
+        for label in self._dataset_config['data_description'].keys():
+
+            prop = self._parse_identifier(self._dataset_config['data_description'][label])
+
+            source_type = prop['source_type']
+            corr_type = prop['corr_type']
+            error_scaling = prop['error_scaling']
+            source_relation = prop['source_relation']
+
+            # There are three possible ways to identify a source
+            # 1. The supplied label matches one source in self._arr_dict
+            # 2. 'cov_' + label matches a source in self._arr_dict
+            # 3. label + '_lo' and label + '_up' match sources in self._arr_dict
             if label in self._arr_dict:
-                item = self._arr_dict[label]
-            # Asymmetric uncertainty source
-            elif ("{}_l".format(label) in self._arr_dict) and \
-                 ("{}_h".format(label) in self._arr_dict):
-                item = np.vstack((self._arr_dict["{}_l".format(label)],
-                                  self._arr_dict["{}_h".format(label)]))
-            # Source can be added later on the fly. Dummy will be added for now.
-            elif origin == 'theo_uncert':
-                pass
+                quantity = self._arr_dict[label]
+            elif ("{}_lo".format(label) in self._arr_dict) and \
+                 ("{}_up".format(label) in self._arr_dict):
+                quantity = np.vstack((self._arr_dict["{}_lo".format(label)],
+                                  self._arr_dict["{}_up".format(label)]))
+            elif "cov_{}".format(label) in self._arr_dict:
+                quantity = self._arr_dict["cov_{}".format(label)]
+            # Dummy quantity is used. Theory qunatity will be calculated later.
+            elif prop['source_type'] == 'theo_uncert':
+                quantity = None
             else:
                 raise Exception("Requested source \"{}\" not found in datafile.".format(label))
 
-            if origin in ['bin', 'data_correction', 'theo_correction', 'data', 'theory']:
-                source = Source(label=label, arr=item, origin=origin)
+            # Item is a source and no uncertainty
+            if source_type in ['bin', 'data_correction', 'theo_correction', 'data', 'theory']:
+                source = Source(label=label, arr=quantity, source_type=source_type)
                 self.sources.append(source)
-            elif origin in ['exp_uncert', 'theo_uncert']:
-                if label in self._dataset_config['corr_type']:
-                    corr_type = self._dataset_config['corr_type'][label]
-                else:
-                    logger.debug("No correlation type supplied for source \"{}\".".format(label))
-                    corr_type = None
+            # Item is a uncertainty source
+            elif source_type in ['exp_uncert', 'theo_uncert']:
+                if quantity is not None:
+                    if "corr_{}".format(label) in self._arr_dict:
+                        corr_matrix = self._arr_dict["corr_{}".format(label)]
+                    else:
+                        corr_matrix = None
 
-                if label in self._dataset_config['error_scaling']:
-                    error_scaling = self._dataset_config['error_scaling'][label]
-                else:
-                    error_scaling = None
-
-                if corr_type in ['corr', 'uncorr'] or corr_type.startswith('corr'):
-                    uncertainty_source = UncertaintySource(origin=origin,
-                                                           arr=item,
+                    uncertainty_source = UncertaintySource(source_type=source_type,
+                                                           arr=quantity,
+                                                           corr_matrix=corr_matrix,
                                                            label=label,
                                                            corr_type=corr_type,
-                                                           error_scaling=error_scaling)
-                elif corr_type == 'bintobin':
-                    if 'cov_' + label in self._arr_dict:
-                        uncertainty_source = UncertaintySource(origin=origin,
-                                                               cov_matrix=self._arr_dict['cov_' + label],
-                                                               label=label,
-                                                               corr_type=corr_type,
-                                                               error_scaling=error_scaling)
-                    elif 'cor_' + label in self._arr_dict:
-                        uncertainty_source = UncertaintySource(origin=origin,
-                                                               arr=item,
-                                                               corr_matrix=self._arr_dict['cor_' + label],
-                                                               label=label,
-                                                               corr_type=corr_type,
-                                                               error_scaling=error_scaling)
-                    # Add dummy source, which needs to be overwritten later.
-                    elif origin == 'theo_uncert':
-                        uncertainty_source = UncertaintySource(origin=origin,
-                                                               cov_matrix=np.atleast_2d(0.),
-                                                               label=label,
-                                                               corr_type=corr_type,
-                                                               error_scaling=error_scaling)
+                                                           error_scaling=error_scaling,
+                                                           source_relation=source_relation)
+                elif quantity is None and prop['source_type'] == 'theo_uncert':
+                    logger.debug('Adding dummy source for \"{}\". Meant to be replaced later by calculation.'.format(label))
+                    uncertainty_source = UncertaintySource(source_type=source_type,
+                                                           arr=[0],
+                                                           label=label,
+                                                           corr_type=corr_type,
+                                                           error_scaling=error_scaling,
+                                                           source_relation=source_relation)
 
-                    else:
-                        raise ValueError('No array or covariance matrix found for source \"{}\"'.format(label))
                 else:
                     raise ValueError('Correlation type \"{}\" not known.'.format(corr_type))
                 self.sources.append(uncertainty_source)
             else:
-                raise ValueError("Source \"{}\" is of unknown origin \"{}\".".format(label, origin))
+                raise ValueError("Source \"{}\" is of unknown source_type \"{}\".".format(label, identifier))

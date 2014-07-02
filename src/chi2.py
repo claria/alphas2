@@ -36,10 +36,9 @@ class Chi2Nuisance(Chi2):
 
     def __init__(self, measurement):
         super(Chi2Nuisance, self).__init__(measurement)
-        self._cov_matrix = self._measurement.get_cov_matrix(
-            corr_type=('bintobin', 'uncorr'))
+        self._cov_matrix = self._measurement.get_cov_matrix(corr_type=('bintobin', 'uncorr'))
         self._inv_matrix = np.matrix(self._cov_matrix).getI()
-        self._beta = self._measurement.get_uncert_list(corr_type=('fully',))
+        self._beta = self._measurement.get_uncert_list(corr_type=('corr',))
 
         self._chi2_correlated = 0.0
         self._theory_mod = None

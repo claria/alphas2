@@ -3,6 +3,9 @@ from chi2 import Chi2Cov
 from fnlo import fastNLOUncertaintiesAlphas
 from copy import deepcopy
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class GobalDataSet(object):
     """Holds all datasets and returns global covariance matrix
@@ -127,44 +130,44 @@ class DataSet(object):
 
     def _add_source(self, source):
         #TODO: Check if source already exists and throw warning
-            if source.origin == 'data':
+            if source.source_type == 'data':
                 self.data = source
-            elif source.origin == 'theory':
+            elif source.source_type == 'theory':
                 self.theory = source
-            elif source.origin == 'bin':
+            elif source.source_type == 'bin':
                 self._bins[source.label] = source
-            elif source.origin in ['theo_correction', 'data_correction']:
+            elif source.source_type in ['theo_correction', 'data_correction']:
                 self._corrections[source.label] = source
-            elif source.origin in ['theo_uncert', 'exp_uncert']:
+            elif source.source_type in ['theo_uncert', 'exp_uncert']:
                 self._uncertainties[source.label] = source
             else:
-                raise Exception('Source origin not known')
+                raise Exception('Source source_type not known')
 
     def add_sources(self, sources):
         for source in sources:
             self._add_source(source)
 
-    def has_uncert(self, corr_type=None, origin=None, label=None):
+    def has_uncert(self, corr_type=None, source_type=None, label=None):
         for uncertainty in self._uncertainties:
             if corr_type is not None:
                 if uncertainty.corr_type in corr_type:
                     return True
-            if origin is not None:
-                if uncertainty.origin in origin:
+            if source_type is not None:
+                if uncertainty.source_type in source_type:
                     return True
             if label is not None:
                 if uncertainty.label in label:
                     return True
         return False
 
-    def get_uncert_list(self, corr_type=None, origin=None, label=None):
+    def get_uncert_list(self, corr_type=None, source_type=None, label=None):
         uncert_list = []
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
                 if uncertainty.corr_type not in corr_type:
                     continue
-            if origin is not None:
-                if uncertainty.origin not in origin:
+            if source_type is not None:
+                if uncertainty.source_type not in source_type:
                     continue
             if label is not None:
                 if uncertainty.label not in label:
@@ -172,14 +175,14 @@ class DataSet(object):
             uncert_list.append(self._get_scaled(uncertainty))
         return uncert_list
 
-    def get_cov_matrix(self, corr_type=None, origin=None, label=None):
+    def get_cov_matrix(self, corr_type=None, source_type=None, label=None):
         cov_matrix = np.zeros((self.nbins, self.nbins))
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
                 if uncertainty.corr_type not in corr_type:
                     continue
-            if origin is not None:
-                if uncertainty.origin not in origin:
+            if source_type is not None:
+                if uncertainty.source_type not in source_type:
                     continue
             if label is not None:
                 if uncertainty.label not in label:
@@ -188,15 +191,15 @@ class DataSet(object):
 
         return cov_matrix
 
-    def get_diagonal_unc(self, corr_type=None, origin=None, label=None):
+    def get_diagonal_unc(self, corr_type=None, source_type=None, label=None):
 
         diag_uncert = np.zeros((2, self.nbins))
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
                 if uncertainty.corr_type not in corr_type:
                     continue
-            if origin is not None:
-                if uncertainty.origin not in origin:
+            if source_type is not None:
+                if uncertainty.source_type not in source_type:
                     continue
             if label is not None:
                 if uncertainty.label not in label:
@@ -221,12 +224,12 @@ class DataSet(object):
     def _get_corrected(self, src):
         new_src = deepcopy(src)
          # Apply corrections
-        if new_src.origin not in ('data', 'theory'):
+        if new_src.source_type not in ('data', 'theory'):
             raise ValueError('Only data or theory can be corrected at the moment.')
         for correction in self._corrections.values():
-            if new_src.origin == 'data' and correction.origin == 'data_correction':
+            if new_src.source_type == 'data' and correction.source_type == 'data_correction':
                 new_src *= correction.get_arr()
-            if new_src.origin == 'theory' and correction.origin == 'theo_correction':
+            if new_src.source_type == 'theory' and correction.source_type == 'theo_correction':
                 new_src *= correction.get_arr()
 
         return new_src
@@ -234,7 +237,7 @@ class DataSet(object):
     def _get_scaled(self, src):
         new_src = deepcopy(src)
        # Apply rescaling of uncertainty
-        if new_src.origin not in ('exp_uncert', 'theo_uncert'):
+        if new_src.source_type not in ('exp_uncert', 'theo_uncert'):
             raise ValueError("Only exp and theo uncertainties can be rescaled at the moment.")
         if new_src.error_scaling is None or new_src.error_scaling == 'none':
             pass
@@ -274,16 +277,16 @@ class FastNLODataset(DataSet):
 
     def _calculate_theory(self):
         xsnlo = self._fnlo.get_central_crosssection()
-        self._theory = Source(xsnlo, label='xsnlo', origin='theory')
+        self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
         # Overwrite source, if existing, with current calculation
         if 'pdf_uncert' in self._uncertainties.keys():
             cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
-            self._add_source(UncertaintySource(cov_matrix=cov_pdf_uncert,
+            self._add_source(UncertaintySource(arr=cov_pdf_uncert,
                                                label='pdf_uncert',
-                                               origin='theo_uncert'))
+                                               source_type='theo_uncert'))
         # self._add_source(UncertaintySource(arr=self._fnlo.get_scale_uncert(),
         #                                    label='pdf_uncert',
-        #                                    origin='theo_uncert',
+        #                                    source_type='theo_uncert',
         #                                    corr_type='corr'))
 
 
@@ -300,8 +303,8 @@ class Source(object):
             Name, identifier of the source
         nbins: int
             Number of bins of quantity
-        origin: str
-            Origin of the source describing the type of the quantity. Possible
+        source_type: str
+            source_type of the source describing the type of the quantity. Possible
             choices are [data, theory, bin, data_correction, theo_correction, exp_uncert, theo_uncert]
             data, theory:
                 identify data cross section, or theory prediction
@@ -312,17 +315,17 @@ class Source(object):
             exp_uncert, theo_uncert:
                 experimental or theoretical uncertainty source
     """
-    def __init__(self, arr, label=None, origin=None):
+    def __init__(self, arr, label=None, source_type=None):
 
         # All member attributes
         self._arr = None
-        self._origin = None
+        self._source_type = None
         self._label = None
 
         # Initialize member variables
         self.arr = arr
         self.label = label
-        self.origin = origin
+        self.source_type = source_type
 
     def __str__(self):
         return self._label
@@ -362,20 +365,20 @@ class Source(object):
     nbins = property(get_nbins)
 
     ##########
-    # origin #
+    # source_type #
     ##########
 
-    def set_origin(self, origin):
-        if origin not in ['data', 'theory', 'bin',
+    def set_source_type(self, source_type):
+        if source_type not in ['data', 'theory', 'bin',
                           'data_correction', 'theo_correction',
                           'exp_uncert', 'theo_uncert']:
-            raise Exception("{} is not a valid origin.".format(origin))
-        self._origin = origin
+            raise Exception("{} is not a valid source_type.".format(source_type))
+        self._source_type = source_type
 
-    def get_origin(self):
-        return self._origin
+    def get_source_type(self):
+        return self._source_type
 
-    origin = property(get_origin, set_origin)
+    source_type = property(get_source_type, set_source_type)
 
     #########
     # Label #
@@ -406,16 +409,16 @@ class UncertaintySource(Source):
                bintobin: Bin-to-bin correlations. Must be provided in correlation/covariance matrix
         error_scaling: str, optional
             Information how this Source should be scaled by the dataset [additive, multiplicative, poissonlike]
-                additive: Source does not scale with truth. If origin is exp_uncert, no rescaling is required, if
-                          origin is theo_uncert, then the source is rescaled to data.
-                multiplicative: Source scales with truth value, If origin is exp_uncert, data is rescaled to the truth
-                                value (theory). If origin is theo_uncert, source is not rescaled.
+                additive: Source does not scale with truth. If source_type is exp_uncert, no rescaling is required, if
+                          source_type is theo_uncert, then the source is rescaled to data.
+                multiplicative: Source scales with truth value, If source_type is exp_uncert, data is rescaled to the truth
+                                value (theory). If source_type is theo_uncert, source is not rescaled.
                 poisson: Assuming poisson-like scaling of uncertainty
         relative: bool, optional
-            The Uncertainty Source is relative to the quantity of origin, e.g. exp_uncert, theo_uncert.
+            The Uncertainty Source is relative to the quantity of source_type, e.g. exp_uncert, theo_uncert.
     """
-    def __init__(self, arr=None, label=None, origin=None, cov_matrix=None,
-                 corr_matrix=None, corr_type=None, relative=False, error_scaling=None):
+    def __init__(self, arr=None, label=None, source_type=None,
+                 corr_matrix=None, corr_type='uncorr', source_relation='absolute', error_scaling=None):
         # possible cases
         # 1. cov given, no corr_type
         # 1. cov given, corr type
@@ -425,49 +428,46 @@ class UncertaintySource(Source):
         # All member attributes
         self._corr_matrix = None
         self._corr_type = None
-        # Is it a relative or absolute uncertainty source
-        self._relative = relative
+        # Is it a source_relation or absolute uncertainty source
+        self._source_relation = source_relation
         self._error_scaling = error_scaling
 
         # Either covariance matrix or diagonal elements must be provided.
-        if arr is None and cov_matrix is None:
+        if arr is None:
             raise Exception(('Either diagonal uncertainty or covariance matrix'
                              'must be provided for source {}.').format(label))
-        if arr is not None and cov_matrix is not None:
-            raise Exception('Please provide either a diagonal uncertainty or a cov matrix, not both.')
 
-        # No covariance is provided
-        if cov_matrix is None:
-           # Convert arr into numpy array if not None
-            if not isinstance(arr, np.ndarray):
-                arr = np.array(arr)
-            if arr.ndim == 1:
-                arr = np.vstack((arr, arr))
-            elif arr.ndim == 2:
-                pass
-            else:
-                raise Exception('A 1-dim or 2-dim array must be provided.')
+        # TODO: Check if arr is a 1-dim source, a-dim asymmetric source or a nxn cov_matrix
 
-            if corr_type is None and corr_matrix is None:
-                raise ValueError(('Neither a covariance matrix nor a correlation matrix" '
-                                 ' or corr_type is provided for source {}.').format(label))
-        # Covariance matrix is provided
-        else:
-            # Extract diagonal elements from covariance matrix
-            # TODO: Catch divison by zero if diagonal elements are zero
-            # Throws a waring at the moment.
-            arr = np.sqrt(cov_matrix.diagonal())
+        # Convert arr into numpy array if not None
+        if not isinstance(arr, np.ndarray):
+            arr = np.array(arr)
+
+        if arr.ndim == 1:
             arr = np.vstack((arr, arr))
-            if corr_matrix is not None:
-                raise Exception('No corr_matrix may be provided if a cov matrix is given.')
-            corr_matrix = cov_matrix / np.outer(arr[0], arr[0])
-            # A bit hacky...
-            corr_matrix[np.isnan(corr_matrix)] = 0.
-            if corr_type is None:
-                corr_type = 'bintobin'
+        elif arr.ndim == 2:
+            #Check if arr is symmetric --> means covariance matrix
+            if (arr.transpose() == arr).all():
+                # Extract diagonal elements from covariance matrix
+                # TODO: Catch divison by zero if diagonal elements are zero
+                diag = np.sqrt(arr.diagonal())
+                corr_matrix = arr / np.outer(diag, diag)
+                corr_matrix[np.isnan(corr_matrix)] = 0.
+                arr = np.vstack((diag, diag))
+                if corr_type is None:
+                    corr_type = 'bintobin'
+            else:
+                # Already have a asymmetric 2d source.
+                pass
+        else:
+            raise Exception('A 1-dim or 2-dim array must be provided.')
+
+        if corr_type is None and corr_matrix is None:
+            raise ValueError(('Neither a covariance matrix nor a correlation matrix" '
+                              ' or corr_type is provided for source {}.').format(label))
 
         # Call super __init__ with constructed array
-        super(UncertaintySource, self).__init__(arr=arr, label=label, origin=origin)
+        super(UncertaintySource, self).__init__(arr=arr, label=label, source_type=source_type)
 
         # No covariance matrix given, but correlation matrix given
         if corr_type is not None and corr_type != 'bintobin':
@@ -502,13 +502,13 @@ class UncertaintySource(Source):
     # relative uncertainty #
     ########################
 
-    def get_relative(self):
-        return self._relative
+    def get_source_relation(self):
+        return self._source_relation
 
-    def set_relative(self, relative):
-        self._relative = relative
+    def set_source_relation(self, source_relation):
+        self._source_relation = source_relation
 
-    relative = property(get_relative, set_relative)
+    relative = property(get_source_relation, set_source_relation)
 
     #################
     # error scaling #
@@ -535,8 +535,8 @@ class UncertaintySource(Source):
             if corr_type == 'uncorr':
                 self._corr_matrix = np.identity(self.nbins)
             elif corr_type.startswith('corr'):
-                if len(corr_type.split(':')) == 2:
-                    corr_factor = float(corr_type.split(':')[1])
+                if len(corr_type.split('_')) == 2:
+                    corr_factor = float(corr_type.split('_')[1])
                 elif corr_type == 'corr':
                     corr_factor = 1.0
                 else:
@@ -568,7 +568,7 @@ class UncertaintySource(Source):
         """Calculates and returns the corr_type of the covariance matrix. Needed for the nuisance parameter
            method in which fully correlated uncertainties are treated using nuisance parameters.
         """
-        if np.array_equal(self.corr_matrix,np.identity(self.nbins)):
+        if np.array_equal(self.corr_matrix, np.identity(self.nbins)):
             return 'uncorr'
         elif np.array_equal(self.corr_matrix, np.ones((self.nbins, self.nbins))):
             return 'corr'
