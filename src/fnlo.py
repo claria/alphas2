@@ -298,7 +298,7 @@ class fastNLOUncertainties(object):
         EVVAR: Asymmetric Eigenvectors with additional VAR PDF
         """
         # Scale PDF self._clscale
-        if self._lhgrid_filename.startswith('CT10'):
+        if self._lhgrid_filename.startswith('CT10') or self._lhgrid_filename.startswith('cteq'):
             self._errortype = 'EV'
             self._pdf_clscale = 1.645
         elif self._lhgrid_filename.startswith('MSTW'):

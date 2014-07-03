@@ -22,9 +22,10 @@ def perform_fit(**kwargs):
         dataset_provider = DataProvider(dataset_filename, global_config)
         # dataset_config = dataset_provider.get_dataset_config()
         dataset = dataset_provider.get_dataset()
-
+        dataset.set_theory_parameters(asmz=0.118)
         global_dataset.add_dataset(dataset)
 
+    print global_dataset.get_data()/global_dataset.get_theory()
     fit = MinuitFitter(global_dataset)
     fit.do_fit()
     # fit.save_result()

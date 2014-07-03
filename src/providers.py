@@ -25,7 +25,7 @@ class DataProvider(object):
     def get_dataset(self):
         fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
         pdfset = self._global_config['pdfset']
-        return TestDataset(fastnlo_table, pdfset, sources=self.sources,
+        return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
                               label=self._dataset_config['config']['short_label'])
 
     def get_dataset_config(self):
@@ -65,7 +65,8 @@ class DataProvider(object):
 
     @staticmethod
     def _parse_identifier(identifier):
-        identifier_list = identifier.split(':')
+        # Remove leading and trailing colons and then split the string
+        identifier_list = identifier.lstrip(':').rstrip(':').split(':')
         #out = {'source_type': None,
         #      'corr_type': 'uncorr',
         #       'error_scaling': None,

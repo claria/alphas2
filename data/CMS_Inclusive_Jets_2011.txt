@@ -35,7 +35,7 @@ PileUpBias       = exp_uncert:corr:multiplicative
 RelativeStatHF   = exp_uncert:corr:multiplicative
 RelativeJERC1    = exp_uncert:corr:multiplicative
 RelativeFSR      = exp_uncert:corr:multiplicative
-pdf_uncert       = theo_uncert:bintobin
+# pdf_uncert       = theo_uncert:bintobin
 
 [data]
 #  y_lo  y_up  pt_lo  pt_up  xs         stat        uncor      High_PT_EXTR  FLAVOUR     RelativeStatEC2  RelativeJERCHF  SINGLE_PION_0005  RelativeJERC2  ABSOLUTE    PileUpJetRate  unf_err     PileUpPt    npcor  SINGLE_PION_BAR  SINGLE_PION_END  SINGLE_PION_0510  PileUpDataMC  PileUpOOT   lumierr     TIME        PileUpBias  SINGLE_PION_1015  RelativeStatHF  RelativeJERC1  RelativeFSR  npcorerr

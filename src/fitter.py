@@ -29,12 +29,12 @@ class MinuitFitter(AlphasFitter):
            between different datasets and within the datasets themselves.
         """
         print self._dataset.get_chi2(), asmz
-        self._dataset.set_theory_parameters(alphasmz=asmz)
+        self._dataset.set_theory_parameters(asmz=asmz)
         return self._dataset.get_chi2()
 
     def do_fit(self):
         # Chi2 tolerance for error evaluation
-        pars = dict(asmz=0.118)
+        pars = dict(asmz=0.118, error_asmz=0.001, limit_asmz=(0.08, 0.1300))
         m = Minuit(self._min_func, **pars)
         #m.print_param()
         m.migrad()

@@ -209,7 +209,7 @@ class DataSet(object):
         return np.sqrt(diag_uncert)
 
     def get_scaled_source(self, label):
-        """Return copy of underlying source with all corrections or scalings applied
+        """Return copy of underlying source with all corrections or scalings applied.
 
         :param label: Name of the source
         :type label: str
@@ -221,14 +221,14 @@ class DataSet(object):
         elif label == 'theory':
             return self._get_corrected(self._theory)
         elif label in self._bins:
-            return self._bins[label]
+            return self._get_scaled(self._bins[label])
         elif label in self._uncertainties:
             return self._get_scaled(self._uncertainties[label])
         else:
             raise Exception('Label not found in sources.')
 
-    def get_source(self, label):
-        """Return copy of underlying source with all corrections or scalings applied
+    def get_raw_source(self, label):
+        """Return raw underlying source, without any corrections or scalings applied.
 
         :param label: Name of the source
         :type label: str
@@ -261,9 +261,10 @@ class DataSet(object):
 
     def _get_scaled(self, src):
         new_src = deepcopy(src)
-       # Apply rescaling of uncertainty
-        if new_src.source_type not in ('exp_uncert', 'theo_uncert'):
-            raise ValueError("Only exp and theo uncertainties can be rescaled at the moment.")
+        # Apply rescaling of uncertainty
+        if new_src.source_type not in ('exp_uncert', 'theo_uncert', 'theo_correction', 'data_correction'):
+            raise ValueError("Only exp and theo uncertainties and correctons can be rescaled at the moment.")
+
         if new_src.error_scaling is None or new_src.error_scaling == 'none':
             pass
         elif new_src.error_scaling == 'additive':
@@ -291,10 +292,10 @@ class FastNLODataset(DataSet):
         self._fnlo = fastNLOUncertaintiesAlphas(self._fastnlo_table, self._pdfset)
         self._calculate_theory()
 
-    def set_theory_parameters(self, alphasmz=None, mz=None):
-        if alphasmz is not None:
-            self._alphasmz = alphasmz
-            self._fnlo.set_alphasmz(alphasmz)
+    def set_theory_parameters(self, asmz=None, mz=None):
+        if asmz is not None:
+            self._alphasmz = asmz
+            self._fnlo.set_alphasmz(asmz)
         if mz is not None:
             self._mz = mz
             self._fnlo.set_mz(mz)
@@ -303,17 +304,17 @@ class FastNLODataset(DataSet):
     def _calculate_theory(self):
 
         xsnlo = self._fnlo.get_central_crosssection()
-        self.get_source('theory').set_arr(xsnlo)
+        self.get_raw_source('theory').set_arr(xsnlo)
         # self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
 
         # Overwrite source, if existing, with current calculation
         if 'pdf_uncert' in self._uncertainties.keys():
             print "update pdf uncert"
             cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
-            self.get_source('pdf_uncert').set_arr(cov_pdf_uncert)
+            self.get_raw_source('pdf_uncert').set_arr(cov_pdf_uncert)
         if 'scale_uncert' in self._uncertainties.keys():
             scale_uncert = self._fnlo.get_scale_uncert()
-            self.get_source('scale_uncert').set_arr(scale_uncert)
+            self.get_raw_source('scale_uncert').set_arr(scale_uncert)
 
 
 class TestDataset(DataSet):
@@ -333,7 +334,7 @@ class TestDataset(DataSet):
     def _calculate_theory(self):
 
         theory = np.array([1., 1., 1.]) * self._alphasmz
-        self.get_source('theory').set_arr(theory)
+        self.get_raw_source('theory').set_arr(theory)
 
 
 class Source(object):
@@ -361,14 +362,16 @@ class Source(object):
             exp_uncert, theo_uncert:
                 experimental or theoretical uncertainty source
     """
-    def __init__(self, arr=None, label=None, source_type=None):
+    def __init__(self, arr=None, label=None, source_type=None, source_relation='absolute'):
 
         # All member attributes
         self._arr = None
         self._source_type = None
         self._label = None
+        # Is it a source_relation or absolute uncertainty source
+        self._source_relation = source_relation
 
-        # Initialize member variables
+         # Initialize member variables
         self.arr = arr
         self.label = label
         self.source_type = source_type
@@ -438,6 +441,18 @@ class Source(object):
 
     label = property(get_label, set_label)
 
+    ########################
+    # relation to quantity #
+    ########################
+
+    def get_source_relation(self):
+        return self._source_relation
+
+    def set_source_relation(self, source_relation):
+        self._source_relation = source_relation
+
+    relative = property(get_source_relation, set_source_relation)
+
 
 class UncertaintySource(Source):
     """ Uncertainty Source with all its properties
@@ -470,7 +485,7 @@ class UncertaintySource(Source):
         # 1. cov given, corr type
         # 2. arr given,  corr_type
         # 3. arr given,  corr_matrix
-        super(UncertaintySource, self).__init__(label=label, source_type=source_type)
+        super(UncertaintySource, self).__init__(label=label, source_type=source_type, source_relation=source_relation)
 
         print "#################"
         print label
@@ -481,8 +496,6 @@ class UncertaintySource(Source):
         self._corr_matrix = None
         self._corr_type = None
 
-        # Is it a source_relation or absolute uncertainty source
-        self._source_relation = source_relation
         self._error_scaling = error_scaling
 
         # Convert arr into numpy array if not None
@@ -494,7 +507,6 @@ class UncertaintySource(Source):
         if corr_type is None and corr_matrix is None:
             raise ValueError(('Neither a covariance matrix nor a correlation matrix" '
                               ' or corr_type is provided for source {}.').format(label))
-
 
         # No covariance matrix given, but correlation matrix given
         if corr_type is not None and corr_type != 'bintobin':
@@ -516,7 +528,7 @@ class UncertaintySource(Source):
 
     @staticmethod
     def _is_covmatrix(arr):
-        if (arr.ndim == 2) and (arr.transpose() == arr).all():
+        if (arr.ndim == 2) and np.array_equal(arr.transpose(), arr):
             return True
         return False
 
@@ -528,7 +540,7 @@ class UncertaintySource(Source):
 
         # TODO: Check if arr is a 1-dim source, a-dim asymmetric source or a nxn cov_matrix
         if arr.ndim == 1:
-            arr = np.vstack((arr, arr))
+            arr = np.vstack((-1. * arr, arr))
         elif arr.ndim == 2:
             #Check if arr is symmetric --> means covariance matrix
             if self._is_covmatrix(arr):
@@ -538,7 +550,7 @@ class UncertaintySource(Source):
                 corr_matrix[np.isnan(corr_matrix)] = 0.
                 self.set_corr_matrix(corr_matrix)
 
-                arr = np.vstack((diag, diag))
+                arr = np.vstack((-1. * diag, diag))
             else:
                 # Already have a asymmetric 2d source.
                 pass
@@ -551,7 +563,7 @@ class UncertaintySource(Source):
         if not self._arr.ndim == 2:
             raise ValueError("Uncertainty source diagonal elements need to be 2d.")
         if symmetric is True:
-            return 0.5 * (self._arr[0] + self._arr[1])
+            return 0.5 * (self._arr[1] - self._arr[0])
         else:
             return self._arr
 
@@ -564,19 +576,7 @@ class UncertaintySource(Source):
 
     nbins = property(get_nbins)
 
-    ########################
-    # relative uncertainty #
-    ########################
-
-    def get_source_relation(self):
-        return self._source_relation
-
-    def set_source_relation(self, source_relation):
-        self._source_relation = source_relation
-
-    relative = property(get_source_relation, set_source_relation)
-
-    #################
+   #################
     # error scaling #
     #################
 
