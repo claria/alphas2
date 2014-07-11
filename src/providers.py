@@ -2,11 +2,12 @@ import os
 import numpy as np
 import StringIO
 
-from measurement import Source, UncertaintySource
-from measurement import FastNLODataset, TestDataset
+from dataset import FastNLODataset, TestDataset
 from configobj import ConfigObj
 import config
 import logging
+from src.sources import UncertaintySource, Source
+
 logger = logging.getLogger(__name__)
 
 

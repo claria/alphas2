@@ -107,7 +107,7 @@ class Chi2Nuisance(Chi2):
         # Multiply by -1 so nuisance parameters correspond to shift
         self._r = np.linalg.solve(a, b) * (-1)
         # Calculate theory prediction shifted by nuisance parameters
-        self._theory_mod = self._theory.copy()
+        self._theory_mod = self._theory.copy
         for k in range(0, nbeta):
             self._theory_mod = self._theory_mod - \
                 self._r[k] * (self._beta[k]())
