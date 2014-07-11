@@ -26,8 +26,8 @@ class DataProvider(object):
     def get_dataset(self):
         fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
         pdfset = self._global_config['pdfset']
-        return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
-                              label=self._dataset_config['config']['short_label'])
+        return TestDataset(fastnlo_table, pdfset, sources=self.sources,
+                           label=self._dataset_config['config']['short_label'])
 
     def get_dataset_config(self):
         return self._dataset_config

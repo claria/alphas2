@@ -1,8 +1,6 @@
 from copy import deepcopy
 import numpy as np
 
-__author__ = 'aem'
-
 
 class Source(object):
     """ Source containing arbitrary quantities like bin edges, bins, data or theory

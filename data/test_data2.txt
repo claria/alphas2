@@ -1,6 +1,6 @@
 [config]
-label = 'Test data'
-short_label = 'test'
+label = 'Test data 2'
+short_label = 'test2'
 reference = 'abc'
 theory_table = fnl2332d.tab
 
@@ -13,6 +13,6 @@ uncorr = exp_uncert:uncorr
 
 [data]
 #  x  y  uncorr corr
-   1. 2.5 1.     1.
-   2. 3.5 1.     1.
+   1. 2.0 1.     1.
+   2. 4.0 1.     1.
    3. 3.0 1.     1.

@@ -48,9 +48,7 @@ class GobalDataSet(DataSetBase):
        and theory/ data arrays
        """
     def __init__(self):
-
         self._datasets = []
-        self._nbins = 0
 
     def get_theory(self):
         return np.concatenate([dataset.get_theory() for dataset in self._datasets])
@@ -67,10 +65,10 @@ class GobalDataSet(DataSetBase):
     data = property(get_data)
 
     def get_nbins(self):
-        return self._nbins
+        return np.sum([dataset.nbins for dataset in self._datasets])
 
     def get_cov_matrix(self):
-        cov_matrix = np.zeros((self._nbins, self._nbins))
+        cov_matrix = np.zeros((self.get_nbins(), self.get_nbins()))
         i = 0
         for dataset in self._datasets:
             dataset_cov_matrix = dataset.get_cov_matrix()
@@ -82,7 +80,6 @@ class GobalDataSet(DataSetBase):
 
     def add_dataset(self, dataset):
         self._datasets.append(dataset)
-        self._nbins += dataset.nbins
 
     def get_chi2(self):
         chi2_calculator = Chi2Cov(self)
@@ -148,7 +145,7 @@ class DataSet(DataSetBase):
 
     def get_theory(self):
         """return theory predictions"""
-        return self._get_corrected(self._theory)
+        return self._get_corrected(self._theory).get_arr()
 
     theory = property(get_theory, set_theory)
 
@@ -160,7 +157,7 @@ class DataSet(DataSetBase):
         self._data = source
 
     def get_data(self):
-        return self._get_corrected(self._data)
+        return self._get_corrected(self._data).get_arr()
 
     data = property(get_data, set_data)
 
@@ -381,23 +378,23 @@ class FastNLODataset(DataSet):
             self.get_raw_source('scale_uncert').set_arr(scale_uncert)
 
 
-#class TestDataset(DataSet):
-#
-#    def __init__(self, fastnlo_table, pdfset, label, sources=None):
-#        super(TestDataset, self).__init__(label, sources)
-#
-#        self._mz = 91.1876
-#        self._alphasmz = 1.
-#        self._calculate_theory()
-#
-#    def set_theory_parameters(self, alphasmz=None):
-#        if alphasmz is not None:
-#            self._alphasmz = alphasmz
-#        self._calculate_theory()
-#
-#    def _calculate_theory(self):
-#
-#        theory = np.array([1., 1., 1.]) * self._alphasmz
-#        self.get_raw_source('theory').set_arr(theory)
+class TestDataset(DataSet):
+
+    def __init__(self, fastnlo_table, pdfset, label, sources=None):
+        super(TestDataset, self).__init__(label, sources)
+
+        self._mz = 91.1876
+        self._alphasmz = 1.
+        self._calculate_theory()
+
+    def set_theory_parameters(self, asmz=None):
+        if asmz is not None:
+            self._alphasmz = asmz
+        self._calculate_theory()
+
+    def _calculate_theory(self):
+
+        theory = np.array([1., ]) * self._alphasmz
+        self.get_raw_source('theory').set_arr(theory)
 
 
