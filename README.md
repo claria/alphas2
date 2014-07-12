@@ -1,6 +1,9 @@
 # alphas2
 =======
 
+## Overview
+
+
 Tool to fit alpha_S from cross section measurements using fastNLO. Data with all
 uncertainties including all correlation is provided using plain text files and are
 steered by configuration files.
@@ -8,12 +11,15 @@ steered by configuration files.
 
 
 
-# Installation:
+## Installation:
 =============
+------------
+Dependencies:
 
-External dependencies:
 Python >= 2.6
+
 Iminuit
+
 fastnlo_toolkit
 
 You need to install the fastNLO toolkit with python bindings and setup the LD_LIBRARY_PATH
@@ -29,6 +35,6 @@ your system or on Pypi.
 
 https://pypi.python.org/pypi/iminuit/1.1.1
 
-# Usage:
+## Usage:
 ======
 
