@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class DataProvider(object):
-
     def __init__(self, filename, global_config):
         self.sources = []
         self._arr_dict = None
@@ -54,7 +53,7 @@ class DataProvider(object):
 
     @staticmethod
     def _read_datafile(dataset_path):
-        #Split into two file objects
+        # Split into two file objects
         configfile = StringIO.StringIO()
         datafile = StringIO.StringIO()
         with open(dataset_path) as f:
@@ -83,20 +82,20 @@ class DataProvider(object):
                 arr_dict[i] = np.atleast_1d(data[i])
 
         except ValueError:
-                # When the number of descriptors in the first comment line does not match the actual number of columns
-                # a ValueError is rised. If only one descriptor is given, it is assumed that a 2d array is provided.
-                datafile.seek(0)
-                header = datafile.readline().lstrip('#').rstrip('\n')
-                if not len(header.split()) == 1:
-                    raise ValueError('Currently only fully qualified field descriptors'
-                                     'or single field descriptors ar allowed.')
-                # noinspection PyTypeChecker
-                data = np.genfromtxt(datafile)
-                arr_dict[header] = np.atleast_1d(data)
+            # When the number of descriptors in the first comment line does not match the actual number of columns
+            # a ValueError is rised. If only one descriptor is given, it is assumed that a 2d array is provided.
+            datafile.seek(0)
+            header = datafile.readline().lstrip('#').rstrip('\n')
+            if not len(header.split()) == 1:
+                raise ValueError('Currently only fully qualified field descriptors'
+                                 'or single field descriptors ar allowed.')
+            # noinspection PyTypeChecker
+            data = np.genfromtxt(datafile)
+            arr_dict[header] = np.atleast_1d(data)
         configfile.close()
         datafile.close()
 
-        #self._dataset_config = dataset_config
+        # self._dataset_config = dataset_config
         #self._arr_dict = arr_dict
         return dataset_config, arr_dict
 
@@ -104,8 +103,8 @@ class DataProvider(object):
     def _parse_identifier(identifier):
         # Remove leading and trailing colons and then split the string
         identifier_list = identifier.lstrip(':').rstrip(':').split(':')
-        #out = {'source_type': None,
-        #      'corr_type': 'uncorr',
+        # out = {'source_type': None,
+        # 'corr_type': 'uncorr',
         #       'error_scaling': None,
         #       'source_relation': 'absolute'}
         out = {}
@@ -114,36 +113,40 @@ class DataProvider(object):
             if item in ['bin', 'data', 'theory', 'theo_correction', 'data_correction', 'exp_uncert', 'theo_uncert']:
                 out['source_type'] = item
                 identifier_list.remove(item)
-                continue
             # corr_type
-            if (item in ['uncorr', 'bintobin', 'corr']) or item.startswith('corr'):
+            elif (item in ['uncorr', 'bintobin', 'corr']) or item.startswith('corr'):
                 out['corr_type'] = item
                 identifier_list.remove(item)
-                continue
             # error_scaling
-            if item in ['additive', 'multiplicative', 'poisson']:
+            elif item in ['additive', 'multiplicative', 'poisson']:
                 out['error_scaling'] = item
                 identifier_list.remove(item)
-                continue
-            if item in ['absolute', 'relative', 'percentage']:
+            elif item in ['absolute', 'relative', 'percentage']:
                 out['source_relation'] = item
                 identifier_list.remove(item)
-                continue
+            elif item in ['fit', 'cov', 'nuis']:
+                out['unc_treatment'] = item
+                identifier_list.remove(item)
+            else:
+                raise ValueError('Invalid identifiers: {}'.format(identifier_list))
 
+        # Check that identifier list is empty. Probably not neccessary.
         if identifier_list:
             raise ValueError('Invalid identifiers: {}'.format(identifier_list))
 
         return out
 
     def _parse_arraydict(self):
-        #for label, item in self._arr_dict.items():
+        # for label, item in self._arr_dict.items():
         for label in self._dataset_config['data_description'].keys():
 
             # Default properties
             prop = {'source_type': None,
                     'corr_type': 'uncorr',
                     'error_scaling': None,
-                    'source_relation': 'absolute'}
+                    'source_relation': 'absolute',
+                    'unc_treatment': 'cov'
+                    }
             try:
                 identifiers = self._parse_identifier(self._dataset_config['data_description'][label])
             except ValueError as e:
@@ -154,6 +157,7 @@ class DataProvider(object):
             corr_type = prop['corr_type']
             error_scaling = prop['error_scaling']
             source_relation = prop['source_relation']
+            unc_treatment = prop['unc_treatment']
 
             # There are three possible ways to identify a source
             # 1. The supplied label matches one source in self._arr_dict
@@ -162,7 +166,7 @@ class DataProvider(object):
             if label in self._arr_dict:
                 quantity = self._arr_dict[label]
             elif ("{}_lo".format(label) in self._arr_dict) and \
-                 ("{}_up".format(label) in self._arr_dict):
+                    ("{}_up".format(label) in self._arr_dict):
                 quantity = np.vstack((self._arr_dict["{}_lo".format(label)],
                                       self._arr_dict["{}_up".format(label)]))
             elif "cov_{}".format(label) in self._arr_dict:
@@ -191,16 +195,18 @@ class DataProvider(object):
                                                            label=label,
                                                            corr_type=corr_type,
                                                            error_scaling=error_scaling,
-                                                           source_relation=source_relation)
+                                                           source_relation=source_relation,
+                                                           unc_treatment=unc_treatment)
                 elif quantity is None and prop['source_type'] == 'theo_uncert':
                     logger.debug(('Adding dummy source for \"{}\".'
-                                 'Meant to be replaced later by calculation.').format(label))
+                                  'Will be replaced later by fastNLO calculation.').format(label))
                     uncertainty_source = UncertaintySource(source_type=source_type,
                                                            arr=[0],
                                                            label=label,
                                                            corr_type=corr_type,
                                                            error_scaling=error_scaling,
-                                                           source_relation=source_relation)
+                                                           source_relation=source_relation,
+                                                           unc_treatment=unc_treatment)
 
                 else:
                     raise ValueError('Correlation type \"{}\" not known.'.format(corr_type))

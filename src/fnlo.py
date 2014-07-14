@@ -1,7 +1,18 @@
 import numpy
-import fastnlo
-from fastnlo import fastNLOLHAPDF, fastNLOAlphas
-fastnlo.SetGlobalVerbosity(fastnlo.WARNING)
+import sys
+
+try:
+    # noinspection PyUnresolvedReferences
+    import fastnlo
+    # noinspection PyUnresolvedReferences
+    from fastnlo import fastNLOLHAPDF, fastNLOAlphas
+    fastnlo.SetGlobalVerbosity(fastnlo.WARNING)
+except ImportError:
+    print "fastNLO module not found."
+    print "Please make sure fastNLO is built with the python extension enabled"
+    print "and it is correctly added to the PYTHONPATH."
+    print "Exiting."
+    sys.exit(1)
 
 
 class fastNLOUncertainties(object):
@@ -70,11 +81,11 @@ class fastNLOUncertainties(object):
     # Bin Methods #
     ###############
 
-    def get_bins_up(self):
-        return self._bins_up
+    # def get_bins_up(self):
+    #     return self._bins_up
 
-    def get_bins_down(self):
-        return self._bins_down
+    # def get_bins_down(self):
+    #     return self._bins_down
 
     #########################
     # Cross Section methods #
@@ -156,11 +167,11 @@ class fastNLOUncertainties(object):
 
         for scale_factor in scale_variations:
             scale_crosssection = self._get_member_crosssection(scale_factor=scale_factor)
-            scale_uncert[0] = numpy.maximum(scale_uncert[0],
-                                            def_crosssection - scale_crosssection)
+            scale_uncert[0] = numpy.max(scale_uncert[0],
+                                        def_crosssection - scale_crosssection)
 
-            scale_uncert[1] = numpy.maximum(scale_uncert[1],
-                                            scale_crosssection - def_crosssection)
+            scale_uncert[1] = numpy.max(scale_uncert[1],
+                                        scale_crosssection - def_crosssection)
         return scale_uncert
 
     #
@@ -233,12 +244,12 @@ class fastNLOUncertainties(object):
             pdf_uncert[1] = pdf_uncert[0]
         else:
             for i in xrange(1, self._npdfmembers / 2 + 1):
-                pdf_uncert[0] += numpy.square(numpy.minimum(numpy.minimum(
+                pdf_uncert[0] += numpy.square(numpy.min(numpy.min(
                     self._member_crosssections[2 * i - 1] -
                     self._member_crosssections[0],
                     self._member_crosssections[2 * i] -
                     self._member_crosssections[0]), 0.))
-                pdf_uncert[1] += numpy.square(numpy.maximum(numpy.maximum(
+                pdf_uncert[1] += numpy.square(numpy.max(numpy.max(
                     self._member_crosssections[2 * i - 1] -
                     self._member_crosssections[0],
                     self._member_crosssections[2 * i] -
@@ -327,7 +338,7 @@ class fastNLOUncertaintiesAlphas(fastNLOUncertainties):
                  alphasmz=0.1184):
 
         self._mz = mz
-        self._alphasmz = 0.1184
+        self._alphasmz = alphasmz
 
         super(fastNLOUncertaintiesAlphas, self).__init__(table_filename,
                                                          lhgrid_filename,

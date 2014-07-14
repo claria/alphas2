@@ -60,15 +60,15 @@ class Source(object):
     # array #
     #########
 
-    def __mul__(self, rhs):
-        res = deepcopy(self)
-        res._arr *= rhs
-        return res
+    # def __mul__(self, rhs):
+    #     res = deepcopy(self)
+    #     res._arr *= rhs
+    #     return res
 
-    def __div__(self, rhs):
-        res = deepcopy(self)
-        res._arr /= rhs
-        return res
+    # def __div__(self, rhs):
+    #     res = deepcopy(self)
+    #     res._arr /= rhs
+    #     return res
 
     def get_arr(self):
         return self._arr
@@ -153,26 +153,24 @@ class UncertaintySource(Source):
                                 truth
                                 value (theory). If source_type is theo_uncert, source is not rescaled.
                 poisson: Assuming poisson-like scaling of uncertainty
-        relative: bool, optional
-            The Uncertainty Source is relative to the quantity of source_type, e.g. exp_uncert, theo_uncert.
+        source_relation: str, optional
+            Relation of the source. It can be absolute, relative or percentage.
     """
     def __init__(self, arr=None, label=None, source_type=None,
-                 corr_matrix=None, corr_type='uncorr', source_relation='absolute', error_scaling=None):
+                 corr_matrix=None, corr_type='uncorr', source_relation='absolute', error_scaling=None,
+                 unc_treatment='cov'):
+
         # possible cases
         # 1. cov given, no corr_type
         # 1. cov given, corr type
-        # 2. arr given,  corr_type
-        # 3. arr given,  corr_matrix
+        # 2. arr given, corr_type
+        # 3. arr given, corr_matrix
         super(UncertaintySource, self).__init__(label=label, source_type=source_type, source_relation=source_relation)
-
-        print "#################"
-        print label
-        print corr_type
-        print corr_matrix
 
         # All member attributes
         self._corr_matrix = None
         self._corr_type = None
+        self._unc_treatment = unc_treatment
 
         self._error_scaling = error_scaling
 
@@ -306,7 +304,8 @@ class UncertaintySource(Source):
 
     def set_corr_type(self, corr_type):
         # TODO: stub function. should manipulate the correlation matrix using the given corr_type
-        pass
+        # should it or not?
+        raise NotImplementedError()
 
     def get_corr_type(self):
         """Calculates and returns the corr_type of the covariance matrix. Needed for the nuisance parameter
@@ -320,6 +319,18 @@ class UncertaintySource(Source):
             return 'bintobin'
 
     corr_type = property(get_corr_type, set_corr_type)
+
+    #################
+    # Unc treatment #
+    #################
+
+    def set_unc_treatment(self, unc_treatment):
+        self._unc_treatment = unc_treatment
+
+    def get_unc_treatment(self):
+        return self._unc_treatment
+
+    unc_treatment = property(get_unc_treatment, set_unc_treatment)
 
     #####################
     # Covariance matrix #

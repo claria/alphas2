@@ -1,5 +1,7 @@
 (A) General Solution for GlobalDataset class.
+(A) Complete solution for Fitting class
 (B) CMS Inclusive Jets: Powheg NP Corrections, EWK corrections
 (B) Caching for theory calculations
+(B) Throw warning if not fully correlated source is treated with nuisance parameters.
 (C) Generalize fnlo uncertainty backend
 

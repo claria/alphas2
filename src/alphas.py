@@ -7,6 +7,7 @@ from ext.configobj import ConfigObj
 from src.dataset import GobalDataSet
 from src.providers import DataProvider
 from src.fitter import MinuitFitter
+from src.chi2 import Chi2Nuisance, Chi2Cov
 
 
 def calculate_chi2(**kwargs):
@@ -24,7 +25,9 @@ def calculate_chi2(**kwargs):
         dataset.set_theory_parameters(kwargs['asmz'])
         global_dataset.add_dataset(dataset)
 
-    print global_dataset.get_chi2()
+    chi2_calculator = Chi2Nuisance(global_dataset)
+    print chi2_calculator.get_chi2()
+    print chi2_calculator.get_nuisance_parameters()
 
 
 def perform_fit(**kwargs):

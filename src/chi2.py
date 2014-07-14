@@ -36,9 +36,9 @@ class Chi2Nuisance(Chi2):
 
     def __init__(self, measurement):
         super(Chi2Nuisance, self).__init__(measurement)
-        self._cov_matrix = self._measurement.get_cov_matrix(corr_type=('bintobin', 'uncorr'))
+        self._cov_matrix = self._measurement.get_cov_matrix(unc_treatment=('cov',))
         self._inv_matrix = np.matrix(self._cov_matrix).getI()
-        self._beta = self._measurement.get_uncert_list(corr_type=('corr',))
+        self._beta = self._measurement.get_uncert_list(unc_treatment=('nuis',))
 
         self._chi2_correlated = 0.0
         self._theory_mod = None
@@ -89,15 +89,15 @@ class Chi2Nuisance(Chi2):
         # Implementation similar to h1fitter
         for k in range(0, nbeta):
             b[k] = (np.matrix(self._data - self._theory)
-                    * self._inv_matrix * np.matrix(self._beta[k]()).getT())
+                    * self._inv_matrix * np.matrix(self._beta[k].get_arr()).getT())
             # Better readable but much slower
             # for l in range(0,npoints):
             #    for i in range(0,npoints):
             #        B[k] += data[l] * syst_error[k][l]*
             #                (data[i]-theory[i]) * inv_matrix[l,i]
             for j in range(0, nbeta):
-                a[k, j] += (np.matrix(self._beta[j]()) * self._inv_matrix *
-                            np.matrix(self._beta[k]()).getT())
+                a[k, j] += (np.matrix(self._beta[j].get_arr()) * self._inv_matrix *
+                            np.matrix(self._beta[k].get_arr()).getT())
                 # Better readable but way slower
                 # for l in range(0,npoints):
                 #    for i in range(0,npoints):
@@ -105,12 +105,12 @@ class Chi2Nuisance(Chi2):
                 #                 syst_error[j][l] * data[l] * inv_matrix[l,i]
 
         # Multiply by -1 so nuisance parameters correspond to shift
+        # noinspection PyTypeChecker
         self._r = np.linalg.solve(a, b) * (-1)
         # Calculate theory prediction shifted by nuisance parameters
-        self._theory_mod = self._theory.copy
+        self._theory_mod = self._theory.copy()
         for k in range(0, nbeta):
-            self._theory_mod = self._theory_mod - \
-                self._r[k] * (self._beta[k]())
+            self._theory_mod = self._theory_mod - self._r[k] * self._beta[k].get_arr()
             chi2_corr += self._r[k] ** 2
         residual_mod = np.matrix(self._data - self._theory_mod)
         self._chi2 = (residual_mod * self._inv_matrix * residual_mod.getT())[

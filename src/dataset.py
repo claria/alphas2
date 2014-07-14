@@ -67,11 +67,19 @@ class GobalDataSet(DataSetBase):
     def get_nbins(self):
         return np.sum([dataset.nbins for dataset in self._datasets])
 
-    def get_cov_matrix(self):
+    def get_uncert_list(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
+        uncert_list = []
+        for dataset in self._datasets:
+            uncert_list += dataset.get_uncert_list(corr_type=corr_type, source_type=source_type,
+                                                   label=label, unc_treatment=unc_treatment)
+        return uncert_list
+
+    def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.get_nbins(), self.get_nbins()))
         i = 0
         for dataset in self._datasets:
-            dataset_cov_matrix = dataset.get_cov_matrix()
+            dataset_cov_matrix = dataset.get_cov_matrix(corr_type=corr_type, source_type=source_type,
+                                                        label=label, unc_treatment=unc_treatment)
             for j in range(0, dataset.nbins):
                 for k in range(0, dataset.nbins):
                     cov_matrix[i+j][i+k] = dataset_cov_matrix[j][k]
@@ -193,7 +201,7 @@ class DataSet(DataSetBase):
                     return True
         return False
 
-    def get_uncert_list(self, corr_type=None, source_type=None, label=None):
+    def get_uncert_list(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         uncert_list = []
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
@@ -205,10 +213,13 @@ class DataSet(DataSetBase):
             if label is not None:
                 if uncertainty.label not in label:
                     continue
+            if unc_treatment is not None:
+                if uncertainty.unc_treatment not in unc_treatment:
+                    continue
             uncert_list.append(self._get_scaled(uncertainty))
         return uncert_list
 
-    def get_cov_matrix(self, corr_type=None, source_type=None, label=None):
+    def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.nbins, self.nbins))
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
@@ -219,6 +230,9 @@ class DataSet(DataSetBase):
                     continue
             if label is not None:
                 if uncertainty.label not in label:
+                    continue
+            if unc_treatment is not None:
+                if uncertainty.unc_treatment not in unc_treatment:
                     continue
             cov_matrix += self._get_scaled(uncertainty).get_cov_matrix()
 
@@ -286,9 +300,9 @@ class DataSet(DataSetBase):
             raise ValueError('Only data or theory can be corrected at the moment.')
         for correction in self._corrections.values():
             if new_src.source_type == 'data' and correction.source_type == 'data_correction':
-                new_src *= correction.get_arr()
+                new_src.scale(correction.get_arr())
             if new_src.source_type == 'theory' and correction.source_type == 'theo_correction':
-                new_src *= correction.get_arr()
+                new_src.scale(correction.get_arr())
 
         return new_src
 
