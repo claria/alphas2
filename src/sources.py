@@ -189,7 +189,7 @@ class UncertaintySource(Source):
         # No covariance matrix given, but correlation matrix given
         if corr_type is not None and corr_type != 'bintobin':
             self.set_corr_matrix(corr_type=corr_type)
-        elif corr_matrix:
+        elif corr_matrix is not None:
             self.set_corr_matrix(corr_matrix)
         elif (corr_type == 'bintobin') and (corr_matrix is None):
             if self._is_covmatrix(arr):

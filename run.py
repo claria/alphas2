@@ -20,26 +20,25 @@ def main():
     # Parent #
     ##########
 
-    parent_parser = argparse.ArgumentParser(add_help=False, prog='PROG')
+    parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('-c', '--config', help='Analysis config')
 
+    parser = argparse.ArgumentParser(add_help=False)
+    subparsers = parser.add_subparsers()
     ###########
     # Chi2 #
     ###########
 
-    parser = argparse.ArgumentParser(add_help=False, prog='PROG')
-    subparsers = parser.add_subparsers()
     parser_chi2 = subparsers.add_parser('chi2', help='Calculate Chi2', parents=[parent_parser])
-    parser_chi2.add_argument('-p', '--pdfset', type=str, help='PDF set to use in the fit')
-    parser_chi2.add_argument('-d', '--datasets', type=str, nargs='+', help='Datasets to use in fits')
+    parser_chi2.add_argument('-p', '--pdfset', type=str, help='PDF set to be used.')
+    parser_chi2.add_argument('-a', '--asmz', type=float, default=0.1184, help='AlphasMz value to be used in calculation')
+    parser_chi2.add_argument('-d', '--datasets', type=str, nargs='+', help='Datasets to be used')
     parser_chi2.set_defaults(func=calculate_chi2)
 
     ###########
     # Fitting #
     ###########
 
-    parser = argparse.ArgumentParser(add_help=False, prog='PROG')
-    subparsers = parser.add_subparsers()
     parser_fit = subparsers.add_parser('fit', help='Do the Fit', parents=[parent_parser])
     parser_fit.add_argument('-p', '--pdfset', type=str, help='PDF set to use in the fit')
     parser_fit.add_argument('-d', '--datasets', type=str, nargs='+', help='Datasets to use in fits')

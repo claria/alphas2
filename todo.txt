@@ -1,10 +1,5 @@
-(A) Include support for correlations files
-(A) Include support for covariance matrices in text files
 (A) General Solution for GlobalDataset class.
-(A) Support for uncertainties in percentage relation
-
-(B) Robust solution for scaled, unscaled sources
-
+(B) CMS Inclusive Jets: Powheg NP Corrections, EWK corrections
 (B) Caching for theory calculations
 (C) Generalize fnlo uncertainty backend
 

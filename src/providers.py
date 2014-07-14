@@ -2,7 +2,7 @@ import os
 import numpy as np
 import StringIO
 
-from dataset import FastNLODataset, TestDataset
+from dataset import FastNLODataset
 from configobj import ConfigObj
 import config
 import logging
@@ -19,24 +19,45 @@ class DataProvider(object):
         self._dataset_config = None
         self._global_config = global_config
 
-        self._dataset_path = os.path.join('data/', filename)
-        self._read_datafile()
+        self._dataset_path = self.get_dataset_path(filename)
+        self._dataset_config, self._arr_dict = self._read_datafile(self._dataset_path)
+
+        # Check for additional files
+        if 'additional_datafiles' in self._dataset_config['config']:
+            for dataset_path in self._dataset_config['config'].as_list('additional_datafiles'):
+                logger.debug('Reading additional file {}'.format(dataset_path))
+                dataset_path = self.get_dataset_path(dataset_path)
+                _, arr = self._read_datafile(dataset_path)
+                self._arr_dict.update(arr)
+
+        print self._arr_dict.keys()
         self._parse_arraydict()
+
+    @staticmethod
+    def get_dataset_path(filename):
+        if os.path.exists(filename):
+            dataset_path = filename
+        elif os.path.exists(os.path.join('data/', filename)):
+            dataset_path = os.path.join('data/', filename)
+        else:
+            raise Exception('Dataset file \"{}\" not found.'.format(filename))
+        return dataset_path
 
     def get_dataset(self):
         fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
         pdfset = self._global_config['pdfset']
-        return TestDataset(fastnlo_table, pdfset, sources=self.sources,
-                           label=self._dataset_config['config']['short_label'])
+        return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
+                              label=self._dataset_config['config']['short_label'])
 
     def get_dataset_config(self):
         return self._dataset_config
 
-    def _read_datafile(self):
+    @staticmethod
+    def _read_datafile(dataset_path):
         #Split into two file objects
         configfile = StringIO.StringIO()
         datafile = StringIO.StringIO()
-        with open(self._dataset_path) as f:
+        with open(dataset_path) as f:
             file_input = f.readlines()
 
         config_part = True
@@ -51,18 +72,33 @@ class DataProvider(object):
         configfile.seek(0)
         datafile.seek(0)
 
-        config = ConfigObj(configfile)
-        data = np.genfromtxt(datafile, names=True)
+        dataset_config = ConfigObj(configfile)
+        # noinspection PyTypeChecker
 
+        arr_dict = dict()
+        try:
+            # noinspection PyTypeChecker
+            data = np.genfromtxt(datafile, names=True)
+            for i in data.dtype.names:
+                arr_dict[i] = np.atleast_1d(data[i])
+
+        except ValueError:
+                # When the number of descriptors in the first comment line does not match the actual number of columns
+                # a ValueError is rised. If only one descriptor is given, it is assumed that a 2d array is provided.
+                datafile.seek(0)
+                header = datafile.readline().lstrip('#').rstrip('\n')
+                if not len(header.split()) == 1:
+                    raise ValueError('Currently only fully qualified field descriptors'
+                                     'or single field descriptors ar allowed.')
+                # noinspection PyTypeChecker
+                data = np.genfromtxt(datafile)
+                arr_dict[header] = np.atleast_1d(data)
         configfile.close()
         datafile.close()
 
-        arr_dict = dict()
-        for i in data.dtype.names:
-            arr_dict[i] = np.atleast_1d(data[i])
-
-        self._dataset_config = config
-        self._arr_dict = arr_dict
+        #self._dataset_config = dataset_config
+        #self._arr_dict = arr_dict
+        return dataset_config, arr_dict
 
     @staticmethod
     def _parse_identifier(identifier):
@@ -157,7 +193,8 @@ class DataProvider(object):
                                                            error_scaling=error_scaling,
                                                            source_relation=source_relation)
                 elif quantity is None and prop['source_type'] == 'theo_uncert':
-                    logger.debug('Adding dummy source for \"{}\". Meant to be replaced later by calculation.'.format(label))
+                    logger.debug(('Adding dummy source for \"{}\".'
+                                 'Meant to be replaced later by calculation.').format(label))
                     uncertainty_source = UncertaintySource(source_type=source_type,
                                                            arr=[0],
                                                            label=label,

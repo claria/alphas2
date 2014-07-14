@@ -10,7 +10,21 @@ from src.fitter import MinuitFitter
 
 
 def calculate_chi2(**kwargs):
-    raise NotImplementedError()
+
+    global_config = ConfigObj(kwargs)
+    if kwargs['config']:
+        config_file = ConfigObj(kwargs['config'])
+        global_config.update(dict((k, v) for k, v in config_file.items() if global_config[k] is None))
+
+    # Global dataset holding all data points, covariance matrices, etc...
+    global_dataset = GobalDataSet()
+    for dataset_filename in global_config['datasets']:
+        dataset_provider = DataProvider(dataset_filename, global_config)
+        dataset = dataset_provider.get_dataset()
+        dataset.set_theory_parameters(kwargs['asmz'])
+        global_dataset.add_dataset(dataset)
+
+    print global_dataset.get_chi2()
 
 
 def perform_fit(**kwargs):
