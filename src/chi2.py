@@ -42,11 +42,22 @@ class Chi2Nuisance(Chi2):
 
         self._chi2_correlated = 0.0
         self._theory_mod = None
-        self._r = None
+        self._r = []
+        self._beta_external = []
+        self._r_external = []
+
+    def set_external_nuisance_parameters(self, beta_external, r_external):
+        self._beta_external = beta_external
+        self._r_external = r_external
+        pass
 
     def get_nuisance_parameters(self):
         beta_labels = [uncertainty.label for uncertainty in self._beta]
-        return dict(zip(beta_labels, self._r))
+        nuis = dict(zip(beta_labels, self._r))
+        beta_external_labels = [uncertainty.label for uncertainty in self._beta_external]
+        nuis_external = dict(zip(beta_external_labels, self._r_external))
+        nuis.update(nuis_external)
+        return nuis
 
     def get_chi2_correlated(self):
         return self._chi2_correlated
@@ -112,6 +123,10 @@ class Chi2Nuisance(Chi2):
         for k in range(0, nbeta):
             self._theory_mod = self._theory_mod - self._r[k] * self._beta[k].get_arr()
             chi2_corr += self._r[k] ** 2
+        for k in range(0, len(self._beta_external)):
+            self._theory_mod = self._theory_mod - self._r_external[k] * self._beta_external[k].get_arr()
+            chi2_corr += self._r_external[k] ** 2
+
         residual_mod = np.matrix(self._data - self._theory_mod)
         self._chi2 = (residual_mod * self._inv_matrix * residual_mod.getT())[
             0, 0]

@@ -47,7 +47,6 @@ def perform_fit(**kwargs):
         dataset.set_theory_parameters(asmz=0.118)
         global_dataset.add_dataset(dataset)
 
-    print global_dataset.get_data()/global_dataset.get_theory()
     fitter = MinuitFitter(global_dataset)
     fitter.do_fit()
     # fit.save_result()

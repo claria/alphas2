@@ -74,6 +74,10 @@ class GobalDataSet(DataSetBase):
                                                    label=label, unc_treatment=unc_treatment)
         return uncert_list
 
+    def set_nuisance_parameters(self, nuisance_parameters):
+        for dataset in self._datasets:
+            dataset.set_nuisance_parameters(nuisance_parameters)
+
     def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.get_nbins(), self.get_nbins()))
         i = 0
@@ -115,6 +119,7 @@ class DataSet(DataSetBase):
         self._uncertainties = {}
         self._bins = {}
         self._corrections = {}
+        self._nuisance_parameters = {}
 
         if sources is not None:
             self.add_sources(sources)
@@ -261,7 +266,7 @@ class DataSet(DataSetBase):
         :param label: Name of the source
         :type label: str
         :returns: Object with label 'label'
-        :rtype : src.sources.Source
+        :rtype : src.sources.Source | src.sources.UncertaintySource
         """
         if label == 'data':
             return self._get_corrected(self._data)
@@ -303,6 +308,11 @@ class DataSet(DataSetBase):
                 new_src.scale(correction.get_arr())
             if new_src.source_type == 'theory' and correction.source_type == 'theo_correction':
                 new_src.scale(correction.get_arr())
+
+        if new_src.source_type == 'theory':
+            for label, nuis_parameter in self._nuisance_parameters.items():
+                if label in self._uncertainties.keys():
+                    new_src.add(nuis_parameter * self.get_raw_source(label=label).get_arr())
 
         return new_src
 
@@ -350,6 +360,12 @@ class DataSet(DataSetBase):
 
         return new_src
 
+    def set_nuisance_parameters(self, nuisance_parameters):
+        self._nuisance_parameters = nuisance_parameters
+
+    def get_nuisance_paramters(self):
+        return self._nuisance_parameters
+
     def get_chi2(self):
         chi2_calculator = Chi2Cov(self)
         return chi2_calculator.get_chi2()
@@ -384,7 +400,7 @@ class FastNLODataset(DataSet):
 
         # Overwrite source, if existing, with current calculation
         if 'pdf_uncert' in self._uncertainties.keys():
-            print "update pdf uncert"
+            logger.debug('Updating pdf uncertainty source')
             cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
             self.get_raw_source('pdf_uncert').set_arr(cov_pdf_uncert)
         if 'scale_uncert' in self._uncertainties.keys():
@@ -392,23 +408,21 @@ class FastNLODataset(DataSet):
             self.get_raw_source('scale_uncert').set_arr(scale_uncert)
 
 
-class TestDataset(DataSet):
-
-    def __init__(self, fastnlo_table, pdfset, label, sources=None):
-        super(TestDataset, self).__init__(label, sources)
-
-        self._mz = 91.1876
-        self._alphasmz = 1.
-        self._calculate_theory()
-
-    def set_theory_parameters(self, asmz=None):
-        if asmz is not None:
-            self._alphasmz = asmz
-        self._calculate_theory()
-
-    def _calculate_theory(self):
-
-        theory = np.array([1., ]) * self._alphasmz
-        self.get_raw_source('theory').set_arr(theory)
-
-
+# class TestDataset(DataSet):
+#
+#     def __init__(self, fastnlo_table, pdfset, label, sources=None):
+#         super(TestDataset, self).__init__(label, sources)
+#
+#         self._mz = 91.1876
+#         self._alphasmz = 1.
+#         self._calculate_theory()
+#
+#     def set_theory_parameters(self, asmz=None):
+#         if asmz is not None:
+#             self._alphasmz = asmz
+#         self._calculate_theory()
+#
+#     def _calculate_theory(self):
+#
+#         theory = np.array([1., ]) * self._alphasmz
+#         self.get_raw_source('theory').set_arr(theory)

@@ -43,6 +43,9 @@ class Source(object):
     def __str__(self):
         return self._label
 
+    def __repr__(self):
+        return "{}: {}".format(self.__class__, self._label)
+
     def copy(self):
         """ Returns deepcopy of object
         :return: Copy of self object
@@ -56,6 +59,11 @@ class Source(object):
         """
         self._arr *= arr
 
+    def add(self, arr):
+        """Scale the source with arr
+        :param arr:
+        """
+        self._arr += arr
     #########
     # array #
     #########
