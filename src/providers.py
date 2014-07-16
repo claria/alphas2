@@ -2,7 +2,7 @@ import os
 import numpy as np
 import StringIO
 
-from dataset import FastNLODataset
+from dataset import FastNLODataset, TestDataset
 from configobj import ConfigObj
 import config
 import logging
@@ -43,10 +43,16 @@ class DataProvider(object):
         return dataset_path
 
     def get_dataset(self):
-        fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
-        pdfset = self._global_config['pdfset']
-        return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
-                              label=self._dataset_config['config']['short_label'])
+        if self._dataset_config['config']['theory_type'] == 'fastNLO':
+            fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
+            pdfset = self._global_config['pdfset']
+            return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
+                                  label=self._dataset_config['config']['short_label'])
+        elif self._dataset_config['config']['theory_type'] == 'test':
+            return TestDataset(sources=self.sources, label=self._dataset_config['config']['short_label'])
+        else:
+            raise Exception('No valid theory_type specified for dataset \"{}\".'.format(
+                self._dataset_config['config']['short_label']))
 
     def get_dataset_config(self):
         return self._dataset_config
@@ -96,7 +102,7 @@ class DataProvider(object):
         datafile.close()
 
         # self._dataset_config = dataset_config
-        #self._arr_dict = arr_dict
+        # self._arr_dict = arr_dict
         return dataset_config, arr_dict
 
     @staticmethod
@@ -105,7 +111,7 @@ class DataProvider(object):
         identifier_list = identifier.lstrip(':').rstrip(':').split(':')
         # out = {'source_type': None,
         # 'corr_type': 'uncorr',
-        #       'error_scaling': None,
+        # 'error_scaling': None,
         #       'source_relation': 'absolute'}
         out = {}
         for item in identifier_list[:]:
@@ -146,7 +152,7 @@ class DataProvider(object):
                     'error_scaling': None,
                     'source_relation': 'absolute',
                     'unc_treatment': 'cov'
-                    }
+            }
             try:
                 identifiers = self._parse_identifier(self._dataset_config['data_description'][label])
             except ValueError as e:

@@ -27,7 +27,7 @@ class MinuitFitter(AlphasFitter):
         self._nuis_parameters_sources = self._dataset.get_uncert_list(unc_treatment=('fit',))
         nuis_parameters_fit = [uncertainty.label for uncertainty in self._nuis_parameters_sources]
 
-        initial_values = {'asmz': 0.1184, 'error_asmz': 0.0001, 'limit_asmz': (0.100, 0.130)}
+        initial_values = {'asmz': 0.99, 'error_asmz': 0.0001, 'limit_asmz': (0.100, 2.)}
         for nuis_parameter in nuis_parameters_fit:
             initial_values[nuis_parameter] = 0.
             initial_values['error_{}'.format(nuis_parameter)] = 1.0
@@ -46,7 +46,7 @@ class MinuitFitter(AlphasFitter):
         # Chi2 tolerance for error evaluation
         # pars = dict(asmz=0.118, error_asmz=0.001, limit_asmz=(0.08, 0.1300))
         self._m.migrad()
-        self._m.minos()
+        # self._m.minos()
         self.values = self._m.values
         self.errors = self._m.errors
         # self._calc_par_uncert()
