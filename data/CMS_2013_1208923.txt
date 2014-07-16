@@ -2,6 +2,7 @@
 label = 'CMS Inclusive Jet measurement 2011'
 short_label = 'CMS Incl. Jets 2011'
 reference = 'Phys.Rev. D87 (2013) 11, 112002'
+theory_type = fastNLO
 theory_table = fnl2332d.tab
 additional_datafiles = CMS_2013_1208923_stat_correlations.txt
 

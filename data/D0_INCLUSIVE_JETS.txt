@@ -2,6 +2,7 @@
 label = 'D0 Inclusive Jet measurement'
 short_label = 'D0 Incl. Jets'
 reference = ''
+theory_type = fastNLO
 theory_table = fnt2009midp_cv21_I779574.tab
 
 [data_description]

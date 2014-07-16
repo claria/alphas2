@@ -2,7 +2,7 @@
 label = 'Test data 2'
 short_label = 'test2'
 reference = 'abc'
-theory_table = fnl2332d.tab
+theory_type = test
 
 [data_description]
 x      = bin
