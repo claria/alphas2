@@ -74,10 +74,6 @@ class GobalDataSet(DataSetBase):
                                                    label=label, unc_treatment=unc_treatment)
         return uncert_list
 
-    def set_nuisance_parameters(self, nuisance_parameters):
-        for dataset in self._datasets:
-            dataset.set_nuisance_parameters(nuisance_parameters)
-
     def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.get_nbins(), self.get_nbins()))
         i = 0
@@ -119,7 +115,6 @@ class DataSet(DataSetBase):
         self._uncertainties = {}
         self._bins = {}
         self._corrections = {}
-        self._nuisance_parameters = {}
 
         if sources is not None:
             self.add_sources(sources)
@@ -210,15 +205,23 @@ class DataSet(DataSetBase):
         uncert_list = []
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
+                if isinstance(corr_type, basestring):
+                    corr_type = [corr_type]
                 if uncertainty.corr_type not in corr_type:
                     continue
             if source_type is not None:
+                if isinstance(source_type, basestring):
+                    source_type = [source_type]
                 if uncertainty.source_type not in source_type:
                     continue
             if label is not None:
+                if isinstance(label, basestring):
+                    label = [label]
                 if uncertainty.label not in label:
                     continue
             if unc_treatment is not None:
+                if isinstance(unc_treatment, basestring):
+                    unc_treatment = [unc_treatment]
                 if uncertainty.unc_treatment not in unc_treatment:
                     continue
             uncert_list.append(self._get_scaled(uncertainty))
@@ -228,17 +231,26 @@ class DataSet(DataSetBase):
         cov_matrix = np.zeros((self.nbins, self.nbins))
         for uncertainty in self._uncertainties.values():
             if corr_type is not None:
+                if isinstance(corr_type, basestring):
+                    corr_type = [corr_type]
                 if uncertainty.corr_type not in corr_type:
                     continue
             if source_type is not None:
+                if isinstance(source_type, basestring):
+                    source_type = [source_type]
                 if uncertainty.source_type not in source_type:
                     continue
             if label is not None:
+                if isinstance(label, basestring):
+                    label = [label]
                 if uncertainty.label not in label:
                     continue
             if unc_treatment is not None:
+                if isinstance(unc_treatment, basestring):
+                    unc_treatment = [unc_treatment]
                 if uncertainty.unc_treatment not in unc_treatment:
                     continue
+
             cov_matrix += self._get_scaled(uncertainty).get_cov_matrix()
 
         return cov_matrix
@@ -309,11 +321,6 @@ class DataSet(DataSetBase):
             if new_src.source_type == 'theory' and correction.source_type == 'theo_correction':
                 new_src.scale(correction.get_arr())
 
-        if new_src.source_type == 'theory':
-            for label, nuis_parameter in self._nuisance_parameters.items():
-                if label in self._uncertainties.keys():
-                    new_src.add(nuis_parameter * self.get_raw_source(label=label).get_arr())
-
         return new_src
 
     def _get_scaled(self, src):
@@ -359,12 +366,6 @@ class DataSet(DataSetBase):
             raise ValueError('The requested error scaling \"{}\" of source \"{}\" is invalid or not yet implemented.'.format(new_src.error_scaling, new_src.label))
 
         return new_src
-
-    def set_nuisance_parameters(self, nuisance_parameters):
-        self._nuisance_parameters = nuisance_parameters
-
-    def get_nuisance_paramters(self):
-        return self._nuisance_parameters
 
     def get_chi2(self):
         chi2_calculator = Chi2Cov(self)

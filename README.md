@@ -1,4 +1,4 @@
-# alphas2
+# alphas2.py
 =========
 
 ## Overview
@@ -36,8 +36,22 @@ https://pypi.python.org/pypi/iminuit/1.1.1
 ## Usage:
 =========
 
+### Description of the datasets
+===============================
 
 ### Chi2 calculation:
 =====================
 
-You can calculate
+General comparisons between data and theory can be done by calculating the Chi2. alphas2.py can calculate the
+chi2 while taking into account all kind of correlations. You have to
+
+
+To calculate the chi2 for a dataset you can use the following command. fastNLO uses the PDF set PDF_SET.LHgrid
+and the value of the strong coupling at Mz of ASMZ to calculate the NLO prediction. The measurement and all uncertainties
+specified in the DATASET.txt will be considered when calculating the chi2:
+
+```
+alphas2/run.py -p PDF_Set.LHgrid -d data/DATASET.txt -a ASMZ
+```
+
+

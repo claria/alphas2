@@ -117,7 +117,7 @@ class Chi2Nuisance(Chi2):
 
         # Multiply by -1 so nuisance parameters correspond to shift
         # noinspection PyTypeChecker
-        self._r = np.linalg.solve(a, b) * (-1)
+        self._r = np.linalg.solve(a, b) * (-1.)
         # Calculate theory prediction shifted by nuisance parameters
         self._theory_mod = self._theory.copy()
         for k in range(0, nbeta):
@@ -128,6 +128,5 @@ class Chi2Nuisance(Chi2):
             chi2_corr += self._r_external[k] ** 2
 
         residual_mod = np.matrix(self._data - self._theory_mod)
-        self._chi2 = (residual_mod * self._inv_matrix * residual_mod.getT())[
-            0, 0]
+        self._chi2 = (residual_mod * self._inv_matrix * residual_mod.getT())[0, 0]
         self._chi2 += chi2_corr

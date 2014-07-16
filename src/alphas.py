@@ -22,12 +22,22 @@ def calculate_chi2(**kwargs):
     for dataset_filename in global_config['datasets']:
         dataset_provider = DataProvider(dataset_filename, global_config)
         dataset = dataset_provider.get_dataset()
-        dataset.set_theory_parameters(kwargs['asmz'])
+        # dataset.set_theory_parameters(kwargs['asmz'])
         global_dataset.add_dataset(dataset)
 
-    chi2_calculator = Chi2Nuisance(global_dataset)
-    print chi2_calculator.get_chi2()
-    print chi2_calculator.get_nuisance_parameters()
+    # We calculate the Chi2 using a 'fit', but we fix alphasmz
+    # Fit is needed if some nuisance parameters need to be fitted.
+    # chi2_calculator = Chi2Nuisance(global_dataset)
+    # print chi2_calculator.get_chi2()
+    # print chi2_calculator.get_nuisance_parameters()
+
+    #We don't want to fit asmz
+    props = {'asmz': kwargs['asmz'], 'fix_asmz': False}
+    fitter = MinuitFitter(global_dataset, user_initial_values=props)
+    fitter.do_fit()
+
+    fitter._m.print_param()
+    fitter._m.print_matrix()
 
 
 def perform_fit(**kwargs):
