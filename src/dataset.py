@@ -80,10 +80,19 @@ class GobalDataSet(DataSetBase):
         for dataset in self._datasets:
             dataset_cov_matrix = dataset.get_cov_matrix(corr_type=corr_type, source_type=source_type,
                                                         label=label, unc_treatment=unc_treatment)
-            for j in range(0, dataset.nbins):
-                for k in range(0, dataset.nbins):
-                    cov_matrix[i+j][i+k] = dataset_cov_matrix[j][k]
-            i += dataset.nbins
+            # print cov_matrix[0:dataset.get_nbins()][0:dataset.get_nbins()]
+            cov_matrix[0:dataset.get_nbins()][0:dataset.get_nbins()] = dataset_cov_matrix
+            i += dataset.get_nbins()
+
+
+        # i = 0
+        # for dataset in self._datasets:
+        #     dataset_cov_matrix = dataset.get_cov_matrix(corr_type=corr_type, source_type=source_type,
+        #                                                 label=label, unc_treatment=unc_treatment)
+        #     for j in range(0, dataset.nbins):
+        #         for k in range(0, dataset.nbins):
+        #             cov_matrix[i+j][i+k] = dataset_cov_matrix[j][k]
+        #     i += dataset.nbins
         return cov_matrix
 
     def add_dataset(self, dataset):
@@ -409,21 +418,19 @@ class FastNLODataset(DataSet):
             self.get_raw_source('scale_uncert').set_arr(scale_uncert)
 
 
-# class TestDataset(DataSet):
-#
-#     def __init__(self, fastnlo_table, pdfset, label, sources=None):
-#         super(TestDataset, self).__init__(label, sources)
-#
-#         self._mz = 91.1876
-#         self._alphasmz = 1.
-#         self._calculate_theory()
-#
-#     def set_theory_parameters(self, asmz=None):
-#         if asmz is not None:
-#             self._alphasmz = asmz
-#         self._calculate_theory()
-#
-#     def _calculate_theory(self):
-#
-#         theory = np.array([1., ]) * self._alphasmz
-#         self.get_raw_source('theory').set_arr(theory)
+class TestDataset(DataSet):
+
+    def __init__(self, label, sources=None):
+        super(TestDataset, self).__init__(label, sources)
+        self._asmz = 0.5
+        self._calculate_theory()
+
+    def set_theory_parameters(self, asmz=None):
+        if asmz is not None:
+            self._asmz = asmz
+        self._calculate_theory()
+
+    def _calculate_theory(self):
+
+        theory = self.get_raw_source(label='x').get_arr() * self._asmz
+        self.get_raw_source('theory').set_arr(theory)
