@@ -74,6 +74,11 @@ class GobalDataSet(DataSetBase):
                                                    label=label, unc_treatment=unc_treatment)
         return uncert_list
 
+    def get_uncert_ndarray(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
+        return np.array([uncert.get_arr()
+                         for uncert in self.get_uncert_list(corr_type=corr_type, source_type=source_type,
+                                                            label=label, unc_treatment=unc_treatment)])
+
     def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.get_nbins(), self.get_nbins()))
         i = 0
@@ -81,7 +86,10 @@ class GobalDataSet(DataSetBase):
             dataset_cov_matrix = dataset.get_cov_matrix(corr_type=corr_type, source_type=source_type,
                                                         label=label, unc_treatment=unc_treatment)
             # print cov_matrix[0:dataset.get_nbins()][0:dataset.get_nbins()]
-            cov_matrix[0:dataset.get_nbins()][0:dataset.get_nbins()] = dataset_cov_matrix
+            print i, dataset.get_nbins()
+            print dataset_cov_matrix.shape
+            print cov_matrix[i:i+dataset.get_nbins(), i:i+dataset.get_nbins()].shape
+            cov_matrix[i:i+dataset.get_nbins(), i:i+dataset.get_nbins()] = dataset_cov_matrix
             i += dataset.get_nbins()
 
 
@@ -235,6 +243,9 @@ class DataSet(DataSetBase):
                     continue
             uncert_list.append(self._get_scaled(uncertainty))
         return uncert_list
+
+    def get_uncert_ndarray(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
+        return np.array([uncert.get_arr() for uncert in self.get_uncert_list(corr_type=corr_type, source_type=source_type, label=label, unc_treatment=unc_treatment)])
 
     def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.nbins, self.nbins))

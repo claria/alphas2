@@ -42,15 +42,15 @@ class Chi2Nuisance(Chi2):
     def __init__(self, dataset):
         super(Chi2Nuisance, self).__init__(dataset)
         self._cov_matrix = self._dataset.get_cov_matrix(unc_treatment='cov')
-        self._beta = self._dataset.get_uncert_list(unc_treatment='nuis')
+        self._beta = self._dataset.get_uncert_ndarray(unc_treatment='nuis')
 
         self._inv_matrix = np.linalg.inv(self._cov_matrix)
 
         self._chi2_correlated = 0.0
         self._theory_mod = None
-        self._r = []
-        self._beta_external = []
-        self._r_external = []
+        self._r = None
+        self._beta_external = None
+        self._r_external = None
 
     def set_external_nuisance_parameters(self, beta_external, r_external):
         self._beta_external = beta_external

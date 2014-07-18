@@ -32,12 +32,10 @@ def calculate_chi2(**kwargs):
     # print chi2_calculator.get_nuisance_parameters()
 
     #We don't want to fit asmz
-    props = {'asmz': kwargs['asmz'], 'fix_asmz': False}
+    props = {'asmz': kwargs['asmz'], 'fix_asmz': True}
     fitter = MinuitFitter(global_dataset, user_initial_values=props)
     fitter.do_fit()
 
-    fitter._m.print_param()
-    fitter._m.print_matrix()
 
 
 def perform_fit(**kwargs):
