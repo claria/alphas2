@@ -46,6 +46,16 @@ class Source(object):
     def __repr__(self):
         return "{}: {}".format(self.__class__, self._label)
 
+    def resize(self, new_size, idx):
+        """  Source will be resized to new_size and existing source will be inserted at idx
+        :param new_size:
+        :param idx:
+        :return:
+        """
+        arr = np.zeros(new_size)
+        arr[idx:idx+self.get_nbins()] = self._arr
+        self.arr = arr
+
     def copy(self):
         """ Returns deepcopy of object
         :return: Copy of self object
@@ -206,9 +216,22 @@ class UncertaintySource(Source):
         else:
             raise Exception('Source {}: Either corr_matrix or corr_type must be provided.'.format(self._label))
 
+    def resize(self, new_size, idx):
+        """  Source will be resized to new_size and existing source will be inserted at idx
+        :param new_size:
+        :param idx:
+        :return:
+        """
+        arr = np.zeros((2, new_size))
+        arr[:, idx:idx+self.get_nbins()] = self._arr
+        corr_matrix = np.zeros((new_size, new_size))
+        corr_matrix[idx:idx+self.get_nbins(), idx:idx+self.get_nbins()] = self._corr_matrix
+        self.arr = arr
+        self.corr_matrix = corr_matrix
     #######
     # arr #
     #######
+
 
     @staticmethod
     def _is_covmatrix(arr):

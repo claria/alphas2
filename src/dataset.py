@@ -69,9 +69,17 @@ class GobalDataSet(DataSetBase):
 
     def get_uncert_list(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         uncert_list = []
+
+        idx = 0
         for dataset in self._datasets:
-            uncert_list += dataset.get_uncert_list(corr_type=corr_type, source_type=source_type,
-                                                   label=label, unc_treatment=unc_treatment)
+            dataset_uncert_list = dataset.get_uncert_list(corr_type=corr_type, source_type=source_type,
+                                                          label=label, unc_treatment=unc_treatment)
+            print dataset_uncert_list
+            [source.resize(self.get_nbins(), idx) for source in dataset_uncert_list]
+            print dataset_uncert_list
+            uncert_list += dataset_uncert_list
+            idx += dataset.get_nbins()
+            print uncert_list
         return uncert_list
 
     def get_uncert_ndarray(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
@@ -91,16 +99,6 @@ class GobalDataSet(DataSetBase):
             print cov_matrix[i:i+dataset.get_nbins(), i:i+dataset.get_nbins()].shape
             cov_matrix[i:i+dataset.get_nbins(), i:i+dataset.get_nbins()] = dataset_cov_matrix
             i += dataset.get_nbins()
-
-
-        # i = 0
-        # for dataset in self._datasets:
-        #     dataset_cov_matrix = dataset.get_cov_matrix(corr_type=corr_type, source_type=source_type,
-        #                                                 label=label, unc_treatment=unc_treatment)
-        #     for j in range(0, dataset.nbins):
-        #         for k in range(0, dataset.nbins):
-        #             cov_matrix[i+j][i+k] = dataset_cov_matrix[j][k]
-        #     i += dataset.nbins
         return cov_matrix
 
     def add_dataset(self, dataset):
@@ -129,12 +127,30 @@ class DataSet(DataSetBase):
         self._data = None
         self._scenario = None
 
+        # TODO: Replace by lists so ordering is preserved
         self._uncertainties = {}
         self._bins = {}
         self._corrections = {}
 
         if sources is not None:
             self.add_sources(sources)
+
+    def resize(self, new_size, idx):
+        """
+
+        :param new_size:
+        :param idx:
+        :return:
+        """
+        self._theory.resize(new_size, idx)
+        self._data.resize(new_size, idx)
+
+        for uncert in self._uncertainties.values():
+            uncert.resize(new_size, idx)
+        for bin in self._bins.values():
+            bin.resize(new_size, idx)
+        for correction in self._corrections.values():
+            correction.resize(new_size, idx)
 
     #########
     # Nbins #
@@ -241,7 +257,7 @@ class DataSet(DataSetBase):
                     unc_treatment = [unc_treatment]
                 if uncertainty.unc_treatment not in unc_treatment:
                     continue
-            uncert_list.append(self._get_scaled(uncertainty))
+            uncert_list.append(self._get_scaled(uncertainty).copy())
         return uncert_list
 
     def get_uncert_ndarray(self, corr_type=None, source_type=None, label=None, unc_treatment=None):

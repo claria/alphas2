@@ -56,7 +56,7 @@ class MinFunction:
     def __init__(self, dataset, pars):
         self._dataset = dataset
         self._pars = pars
-        self._beta = self._dataset.get_uncert_list(unc_treatment=['fit'])
+        self._beta = self._dataset.get_uncert_ndarray(unc_treatment=['fit'])
         self.func_code = make_func_code(pars)
 
     def default_errordef(self):
