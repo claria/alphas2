@@ -74,12 +74,9 @@ class GobalDataSet(DataSetBase):
         for dataset in self._datasets:
             dataset_uncert_list = dataset.get_uncert_list(corr_type=corr_type, source_type=source_type,
                                                           label=label, unc_treatment=unc_treatment)
-            print dataset_uncert_list
             [source.resize(self.get_nbins(), idx) for source in dataset_uncert_list]
-            print dataset_uncert_list
             uncert_list += dataset_uncert_list
             idx += dataset.get_nbins()
-            print uncert_list
         return uncert_list
 
     def get_uncert_ndarray(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
@@ -94,9 +91,6 @@ class GobalDataSet(DataSetBase):
             dataset_cov_matrix = dataset.get_cov_matrix(corr_type=corr_type, source_type=source_type,
                                                         label=label, unc_treatment=unc_treatment)
             # print cov_matrix[0:dataset.get_nbins()][0:dataset.get_nbins()]
-            print i, dataset.get_nbins()
-            print dataset_cov_matrix.shape
-            print cov_matrix[i:i+dataset.get_nbins(), i:i+dataset.get_nbins()].shape
             cov_matrix[i:i+dataset.get_nbins(), i:i+dataset.get_nbins()] = dataset_cov_matrix
             i += dataset.get_nbins()
         return cov_matrix
@@ -128,15 +122,63 @@ class DataSet(DataSetBase):
         self._scenario = None
 
         # TODO: Replace by lists so ordering is preserved
-        self._uncertainties = {}
-        self._bins = {}
-        self._corrections = {}
+        self._uncertainties = []
+        self._bins = []
+        self._corrections = []
 
         if sources is not None:
             self.add_sources(sources)
 
-    def resize(self, new_size, idx):
+    def _get_unc(self, label):
+        """  Lookups and returns uncertainty source of label 'label' in dataset.
+        :param label:
+        :return:
         """
+        for x in self._uncertainties:
+            if x.label == label:
+                return x
+        raise ValueError('Label {} not found in uncertainties.'.format(label))
+
+    def _get_unc_labels(self):
+        """ Returns labels of all uncertainty sources in dataset.
+        :return:
+        """
+        return [source.label for source in self._uncertainties]
+
+    def _get_bin(self, label):
+        """ Lookup and return bin source of label 'label' in dataset.
+        :param label:
+        :return:
+        """
+        for x in self._bins:
+            if x.label == label:
+                return x
+        raise ValueError('Label {} not found in bins.'.format(label))
+
+    def _get_bin_labels(self):
+        """  Returns labels of all bin sources in dataset.
+        :return:
+        """
+        return [source.label for source in self._bins]
+
+    def _get_corr(self, label):
+        """ Lookup and returns correction source of label 'label' in dataset.
+        :param label:
+        :return:
+        """
+        for x in self._corrections:
+            if x.label == label:
+                return x
+        raise ValueError('Label {} not found in corrections.'.format(label))
+
+    def _get_correction_labels(self):
+        """ Returns labels of all correction sources in dataset.
+        :return:
+        """
+        return [source.label for source in self._corrections]
+
+    def resize(self, new_size, idx):
+        """ Resizes all sources in dataset to new size 'new_size with an offset of 'idx'.
 
         :param new_size:
         :param idx:
@@ -145,11 +187,11 @@ class DataSet(DataSetBase):
         self._theory.resize(new_size, idx)
         self._data.resize(new_size, idx)
 
-        for uncert in self._uncertainties.values():
+        for uncert in self._uncertainties:
             uncert.resize(new_size, idx)
-        for bin in self._bins.values():
+        for bin in self._bins:
             bin.resize(new_size, idx)
-        for correction in self._corrections.values():
+        for correction in self._corrections:
             correction.resize(new_size, idx)
 
     #########
@@ -209,11 +251,11 @@ class DataSet(DataSetBase):
             elif source.source_type == 'theory':
                 self.theory = source
             elif source.source_type == 'bin':
-                self._bins[source.label] = source
+                self._bins.append(source)
             elif source.source_type in ['theo_correction', 'data_correction']:
-                self._corrections[source.label] = source
+                self._corrections.append(source)
             elif source.source_type in ['theo_uncert', 'exp_uncert']:
-                self._uncertainties[source.label] = source
+                self._uncertainties.append(source)
             else:
                 raise Exception('Source source_type not known')
 
@@ -236,7 +278,7 @@ class DataSet(DataSetBase):
 
     def get_uncert_list(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         uncert_list = []
-        for uncertainty in self._uncertainties.values():
+        for uncertainty in self._uncertainties:
             if corr_type is not None:
                 if isinstance(corr_type, basestring):
                     corr_type = [corr_type]
@@ -265,7 +307,7 @@ class DataSet(DataSetBase):
 
     def get_cov_matrix(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
         cov_matrix = np.zeros((self.nbins, self.nbins))
-        for uncertainty in self._uncertainties.values():
+        for uncertainty in self._uncertainties:
             if corr_type is not None:
                 if isinstance(corr_type, basestring):
                     corr_type = [corr_type]
@@ -294,7 +336,7 @@ class DataSet(DataSetBase):
     def get_diagonal_unc(self, corr_type=None, source_type=None, label=None):
 
         diag_uncert = np.zeros((2, self.nbins))
-        for uncertainty in self._uncertainties.values():
+        for uncertainty in self._uncertainties:
             if corr_type is not None:
                 if uncertainty.corr_type not in corr_type:
                     continue
@@ -321,9 +363,9 @@ class DataSet(DataSetBase):
         elif label == 'theory':
             return self._get_corrected(self._theory)
         elif label in self._bins:
-            return self._get_scaled(self._bins[label])
+            return self._get_scaled(self._get_bin(label))
         elif label in self._uncertainties:
-            return self._get_scaled(self._uncertainties[label])
+            return self._get_scaled(self._get_unc(label))
         else:
             raise ValueError('Label not found in sources.')
 
@@ -339,19 +381,19 @@ class DataSet(DataSetBase):
             return self._data
         elif label == 'theory':
             return self._theory
-        elif label in self._bins:
-            return self._bins[label]
-        elif label in self._uncertainties:
-            return self._uncertainties[label]
+        elif label in self._get_bin_labels():
+            return self._get_bin(label)
+        elif label in self._get_unc_labels():
+            return self._get_unc(label)
         else:
-            raise ValueError('Label not found in sources.')
+            raise ValueError('Label \'{}\' not found in sources.'.format(label))
 
     def _get_corrected(self, src):
         new_src = deepcopy(src)
         # Apply corrections
         if new_src.source_type not in ('data', 'theory'):
             raise ValueError('Only data or theory can be corrected at the moment.')
-        for correction in self._corrections.values():
+        for correction in self._corrections:
             if new_src.source_type == 'data' and correction.source_type == 'data_correction':
                 new_src.scale(correction.get_arr())
             if new_src.source_type == 'theory' and correction.source_type == 'theo_correction':
@@ -436,11 +478,29 @@ class FastNLODataset(DataSet):
         # self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
 
         # Overwrite source, if existing, with current calculation
-        if 'pdf_uncert' in self._uncertainties.keys():
+        if 'pdf_uncert' in self._get_unc_labels():
             logger.debug('Updating pdf uncertainty source')
             cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
             self.get_raw_source('pdf_uncert').set_arr(cov_pdf_uncert)
-        if 'scale_uncert' in self._uncertainties.keys():
+        if 'scale_uncert' in self._get_unc_labels():
+            scale_uncert = self._fnlo.get_scale_uncert()
+            self.get_raw_source('scale_uncert').set_arr(scale_uncert)
+
+
+class FastNLODatasetNormJets(FastNLODataset):
+
+    def _calculate_theory(self):
+
+        xsnlo = self._fnlo.get_central_crosssection()
+        self.get_raw_source('theory').set_arr(xsnlo/np.sum(xsnlo))
+        # self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
+
+        # Overwrite source, if existing, with current calculation
+        if 'pdf_uncert' in self._get_unc_labels():
+            logger.debug('Updating pdf uncertainty source')
+            cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
+            self.get_raw_source('pdf_uncert').set_arr(cov_pdf_uncert)
+        if 'scale_uncert' in self._get_unc_labels():
             scale_uncert = self._fnlo.get_scale_uncert()
             self.get_raw_source('scale_uncert').set_arr(scale_uncert)
 
