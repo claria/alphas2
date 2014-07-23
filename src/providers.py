@@ -2,7 +2,7 @@ import os
 import numpy as np
 import StringIO
 
-from dataset import FastNLODataset, TestDataset
+from dataset import FastNLODataset, FastNLODatasetNormJets, TestDataset
 from configobj import ConfigObj
 import config
 import logging
@@ -48,6 +48,11 @@ class DataProvider(object):
             pdfset = self._global_config['pdfset']
             return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
                                   label=self._dataset_config['config']['short_label'])
+        # elif self._dataset_config['config']['theory_type'] == 'fastNLONormJets':
+        #     fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
+        #     pdfset = self._global_config['pdfset']
+        #     return FastNLODatasetNormJets(fastnlo_table, pdfset, sources=self.sources,
+        #                           label=self._dataset_config['config']['short_label'])
         elif self._dataset_config['config']['theory_type'] == 'test':
             return TestDataset(sources=self.sources, label=self._dataset_config['config']['short_label'])
         else:
