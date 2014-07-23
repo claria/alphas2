@@ -22,6 +22,9 @@ class Chi2(object):
 
 
 class Chi2Cov(Chi2):
+    """ Simple chi2 calculator weighting the residuum of data and theory with the inverse of the covariance matrix
+        of all uncertainty sources found in the fit.
+    """
 
     def __init__(self, dataset=None):
         super(Chi2Cov, self).__init__(dataset)
@@ -42,50 +45,45 @@ class Chi2Nuisance(Chi2):
     def __init__(self, dataset):
         super(Chi2Nuisance, self).__init__(dataset)
         self._cov_matrix = self._dataset.get_cov_matrix(unc_treatment='cov')
-        self._beta = self._dataset.get_uncert_ndarray(unc_treatment='nuis')
-
         self._inv_matrix = np.linalg.inv(self._cov_matrix)
 
         self._chi2_correlated = 0.0
         self._theory_mod = None
+
+        # Correlated Sources for which nuisance parameters need to be calculated analytically.
+        self._beta = self._dataset.get_uncert_ndarray(unc_treatment='nuis')
         self._r = None
-        self._beta_external = None
-        self._r_external = None
+        # Correlated sources for which nuisance parameters will be provided by Minuit.
+        self._beta_external = []
+        self._r_external = []
 
     def set_external_nuisance_parameters(self, beta_external, r_external):
         self._beta_external = beta_external
         self._r_external = r_external
-        pass
 
     def get_nuisance_parameters(self):
-        beta_labels = [uncertainty.label for uncertainty in self._beta]
-        nuis = dict(zip(beta_labels, self._r))
-        beta_external_labels = [uncertainty.label for uncertainty in self._beta_external]
-        nuis_external = dict(zip(beta_external_labels, self._r_external))
-        nuis.update(nuis_external)
-        return nuis
+        """ Returns list of nuisance parameters
+        :return:
+        """
+        return self._r
 
     def get_chi2_correlated(self):
+        """ Return chi2 contribution by correlated sources (nuisance parameters)
+        :return:
+        """
         return self._chi2_correlated
 
     def get_theory_modified(self):
+        """ Return theory modified by nuisance parameters.
+        :return:
+        """
         return self._theory_mod
 
-    def get_ndof(self):
+    def get_npts(self):
+        """  Return number of datapoints in fit
+        :return:
+        """
         return self._dataset.data.shape[0]
-
-    def save_nuisance_parameters(self, filename):
-        nuisance_parameters = self.get_nuisance_parameters()
-        # TODO: Move check to other part of code
-        directory = os.path.dirname(filename)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        with open(filename, 'w') as f:
-            f.write("{:<20}: {:>10}\n".format("Nuis", "Shift in STD"))
-            for key in sorted(nuisance_parameters.keys()):
-                f.write("{:<20}: {:>10.2f}\n".format(
-                    key, nuisance_parameters[key]))
 
     def _calculate_chi2(self):
 
@@ -98,13 +96,6 @@ class Chi2Nuisance(Chi2):
         # Implementation adapted to the one of the HERAFitter
         # TODO: Get rid of one loop by switching to ndarray of _beta
         for k in range(0, nbeta):
-            print self._inv_matrix
-            print self._inv_matrix.shape
-            print (self._data - self._theory)
-            print (self._data - self._theory).shape
-            print self._beta[k]
-            print self._beta[k].shape
-            print np.inner(np.inner(self._data - self._theory, self._inv_matrix), self._beta[k])
             b[k] = np.inner(np.inner(self._data - self._theory, self._inv_matrix), self._beta[k])
             for j in range(0, nbeta):
                 a[k, j] += np.inner(np.inner(self._beta[j], self._inv_matrix), self._beta[k])

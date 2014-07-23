@@ -2,7 +2,7 @@ import os
 import numpy as np
 import StringIO
 
-from dataset import FastNLODataset, FastNLODatasetNormJets, TestDataset
+from dataset import FastNLODataset, TestDataset
 from configobj import ConfigObj
 import config
 import logging
