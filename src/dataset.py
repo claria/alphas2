@@ -459,8 +459,13 @@ class FastNLODataset(DataSet):
 
         self._mz = 91.1876
         self._alphasmz = 0.1180
+
+        self._usecache = True
+        self._cov_pdf_uncert_rel = None
+
         self._fnlo = fastNLOUncertaintiesAlphas(self._fastnlo_table, self._pdfset)
         self._calculate_theory()
+
 
     def set_theory_parameters(self, asmz=None, mz=None):
         if asmz is not None:
@@ -480,7 +485,14 @@ class FastNLODataset(DataSet):
         # Overwrite source, if existing, with current calculation
         if 'pdf_uncert' in self._get_unc_labels():
             logger.debug('Updating pdf uncertainty source')
-            cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
+            if self._usecache:
+                if self._cov_pdf_uncert_rel is not None:
+                    cov_pdf_uncert = self._cov_pdf_uncert_rel * np.outer(xsnlo, xsnlo)
+                else:
+                    cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
+                    self._cov_pdf_uncert_rel = cov_pdf_uncert / np.outer(xsnlo, xsnlo)
+            else:
+                cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
             self.get_raw_source('pdf_uncert').set_arr(cov_pdf_uncert)
         if 'scale_uncert' in self._get_unc_labels():
             scale_uncert = self._fnlo.get_scale_uncert()

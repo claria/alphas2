@@ -53,7 +53,6 @@ class fastNLOUncertainties(object):
         # 1000 member * 1000 obsbins * 10 skalen* 64 / 8 / 100000 = 80 MB in worst case
         # too much: one array per scale
         self._member_crosssections = None
-        self._fnlo.SetAlphasMz(0.110)
 
     def _init_fastnlo(self):
         # fastNLOReader instance
@@ -335,7 +334,7 @@ class fastNLOUncertaintiesAlphas(fastNLOUncertainties):
                  errortype='auto',
                  pdf_clscale=None,
                  mz=91.1876,
-                 alphasmz=0.1184):
+                 alphasmz=0.1180):
 
         self._mz = mz
         self._alphasmz = alphasmz

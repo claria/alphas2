@@ -30,14 +30,32 @@ class MinuitFitter(object):
 
         # Create a Minuit object with given starting values.
         self._m = Minuit(MinFunction(self._dataset, pars), **initial_values)
+        print "####### BEFORE FIT########"
+        print "data"
+        print self._dataset.get_data()
+        print "theory"
+        print self._dataset.get_theory()
+        print "covmatrix"
+        print self._dataset.get_cov_matrix()[0,0]
+        print self._dataset.get_cov_matrix()[1,1]
+        print self._dataset.get_cov_matrix()[1,0]
+        print self._dataset.get_cov_matrix()[0,1]
+        #import sys
+        #sys.exit(0)
 
     def do_fit(self):
         # Chi2 tolerance for error evaluation
         # pars = dict(asmz=0.118, error_asmz=0.001, limit_asmz=(0.08, 0.1300))
         self._m.migrad()
-        #self._m.minos()
+        self._m.minos()
 
-        # Fit parameters and errors
+        print "####### AFTER FIT########"
+        print "covmatrix"
+        print self._m.fcn._dataset.get_cov_matrix()[0,0]
+        print self._m.fcn._dataset.get_cov_matrix()[1,1]
+        print self._m.fcn._dataset.get_cov_matrix()[1,0]
+        print self._m.fcn._dataset.get_cov_matrix()[0,1]
+         # Fit parameters and errors
         # print self._m.values
         # print self._m.errors
         # print self._m.get_fmin()
@@ -67,8 +85,6 @@ class MinFunction:
         self.func_code = make_func_code(pars)
         self._nuisance_parameters = None
 
-
-
         self._fcn_calls = 0
 
     @staticmethod
@@ -88,8 +104,8 @@ class MinFunction:
         :return: Calculated chi2 value.
         """
         pars = dict(zip(self._pars, args))
-        self._chi2_calculator = Chi2Nuisance(self._dataset)
         self._dataset.set_theory_parameters(asmz=pars['asmz'])
+        self._chi2_calculator = Chi2Nuisance(self._dataset)
         # test
         nuis_pars = list(pars.keys())
         nuis_pars.remove('asmz')
@@ -98,6 +114,6 @@ class MinFunction:
         self._chi2_calculator.set_external_nuisance_parameters(nuis_beta, nuis_r)
         chi2 = self._chi2_calculator.get_chi2()
         # self._fcn_calls += 1
-        # self.print_status(chi2, pars)
+        self.print_status(chi2, pars)
         return chi2
 
