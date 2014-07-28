@@ -94,9 +94,15 @@ class Chi2Nuisance(Chi2):
 
         # Calculate Bk and Akk' according to paper: PhysRevD.65.014012
         # Implementation adapted to the one of the HERAFitter
-        # TODO: Get rid of one loop by switching to ndarray of _beta
+        self._theory_mod = self._theory.copy()
+
+        for k in range(0, len(self._beta_external)):
+            self._theory_mod = self._theory_mod - self._r_external[k] * self._beta_external[k]
+            chi2_corr += self._r_external[k] ** 2
+
+       # TODO: Get rid of one loop by switching to ndarray of _beta
         for k in range(0, nbeta):
-            b[k] = np.inner(np.inner(self._data - self._theory, self._inv_matrix), self._beta[k])
+            b[k] = np.inner(np.inner(self._data - self._theory_mod, self._inv_matrix), self._beta[k])
             for j in range(0, nbeta):
                 a[k, j] += np.inner(np.inner(self._beta[j], self._inv_matrix), self._beta[k])
 
@@ -104,14 +110,10 @@ class Chi2Nuisance(Chi2):
         # noinspection PyTypeChecker
         self._r = np.linalg.solve(a, b) * (-1.)
         # Calculate theory prediction shifted by nuisance parameters
-        self._theory_mod = self._theory.copy()
         for k in range(0, nbeta):
             self._theory_mod = self._theory_mod - self._r[k] * self._beta[k]
             chi2_corr += self._r[k] ** 2
         # Add also external nuisance parameter, which are fitted by Minuit
-        for k in range(0, len(self._beta_external)):
-            self._theory_mod = self._theory_mod - self._r_external[k] * self._beta_external[k]
-            chi2_corr += self._r_external[k] ** 2
 
         residual_mod = self._data - self._theory_mod
         self._chi2 = np.inner(np.inner(residual_mod, self._inv_matrix), residual_mod)

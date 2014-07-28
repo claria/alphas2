@@ -466,7 +466,6 @@ class FastNLODataset(DataSet):
         self._fnlo = fastNLOUncertaintiesAlphas(self._fastnlo_table, self._pdfset)
         self._calculate_theory()
 
-
     def set_theory_parameters(self, asmz=None, mz=None):
         if asmz is not None:
             self._alphasmz = asmz

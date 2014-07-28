@@ -51,10 +51,14 @@ def main(args):
 
     #np.savez(outfile, **data)
     # conatenate arrays
-    res_array = data.values()
-    res = (np.vstack(res_array)).transpose()
-    header = '  '.join(['{:>12s}'.format(k) for k in data.keys()])
-    np.savetxt('CMS_Inclusive_Jets_2011_prep.txt', res, header=header, fmt='%20.5g')
+    import operator
+    from collections import OrderedDict
+    res = OrderedDict(sorted(data.iteritems(), key=operator.itemgetter(0)))
+    print res.keys()
+    res_arr = res.values()
+    res_arr = (np.vstack(res_arr)).transpose()
+    header = '  '.join(['{:>12s}'.format(k) for k in res.keys()])
+    np.savetxt('CMS_Inclusive_Jets_2011_prep.txt', res_arr, header=header, fmt='%20.5g')
     
 def get_max_from_abs(np1,np2):
     res = np.zeros(np1.shape)
