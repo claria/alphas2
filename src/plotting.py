@@ -1,7 +1,39 @@
 import os
 import matplotlib.pyplot as plt
 
-from unilibs.baseplot import BasePlot
+from src.baseplot import BasePlot
+
+
+class DataTheoryRatioPlot(BasePlot):
+
+    def __init__(self, dataset, **kwargs):
+        super(DataTheoryRatioPlot, self).__init__(**kwargs)
+
+        self.ax = self.fig.add_subplot(111)
+        self._dataset = dataset
+
+        self.prepare()
+        self.set_style(self.ax, style='cmsprel')
+
+    def prepare(self):
+        self.ax.set_xlabel('$Q$ (GeV)', x=1.0, ha='right', size='large')
+        self.ax.set_ylabel(r'$\alpha_\mathrm{{S}}(Q)$ ', y=1.0, ha='right', size='large')
+        self.ax.set_xscale('log')
+        pass
+
+    def produce(self):
+
+        print self._dataset.get_bin('pt').get_arr_mid()
+        print self._dataset.get_bin('pt').label
+        self.ax.plot(self._dataset.get_bin('pt').get_arr_mid(), self._dataset.get_data()/self._dataset.get_theory())
+        pass
+
+    def finalize(self):
+
+        self.ax.set_ylim(0.5,1.5)
+
+        self._save_fig()
+        plt.close(self.fig)
 
 
 class AlphasRunningPlot(BasePlot):

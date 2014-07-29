@@ -7,16 +7,14 @@ theory_table = fnl2332d.tab
 additional_datafiles = CMS_2013_1208923_stat_correlations.txt
 
 [data_description]
-y_lo             = bin
-y_up             = bin
-pt_lo            = bin
-pt_up            = bin
+y                = bin
+pt               = bin
 xs               = data
 xsnlo            = theory
 stat             = exp_uncert:relative:bintobin
 uncor            = exp_uncert:relative:uncorr
 npcor            = theo_correction
-lumierr          = exp_uncert:relative:corr:multiplicative:fit
+lumierr          = exp_uncert:relative:corr:multiplicative:nuis
 ABSOLUTE         = exp_uncert:relative:corr:multiplicative:cov
 unf_err          = exp_uncert:relative:corr:multiplicative:cov
 High_PT_EXTR     = exp_uncert:relative:corr:multiplicative:cov
@@ -39,7 +37,18 @@ RelativeStatHF   = exp_uncert:relative:corr:multiplicative:cov
 RelativeJERC1    = exp_uncert:relative:corr:multiplicative:cov
 RelativeFSR      = exp_uncert:relative:corr:multiplicative:cov
 npcorerr         = theo_uncert:absolute:corr:cov
-pdf_uncert       = theo_uncert:bintobin
+# pdf_uncert       = theo_uncert:bintobin
+
+[plot]
+x = pt
+split_fig = y
+
+[cuts]
+y_min  = 0.0
+y_max  = 0.5
+pt_min = 10.
+pt_max = 1000000.
+
 
 [data]
 #ABSOLUTE_lo  ABSOLUTE_up  FLAVOUR_lo  FLAVOUR_up  High_PT_EXTR_lo  High_PT_EXTR_up  PileUpBias_lo  PileUpBias_up  PileUpDataMC_lo  PileUpDataMC_up  PileUpJetRate_lo  PileUpJetRate_up  PileUpOOT_lo  PileUpOOT_up  PileUpPt_lo  PileUpPt_up  RelativeFSR_lo  RelativeFSR_up  RelativeJERC1_lo  RelativeJERC1_up  RelativeJERC2_lo  RelativeJERC2_up  RelativeJERCHF_lo  RelativeJERCHF_up  RelativeStatEC2_lo  RelativeStatEC2_up  RelativeStatHF_lo  RelativeStatHF_up  SINGLE_PION_0005  SINGLE_PION_0510  SINGLE_PION_1015  SINGLE_PION_BAR  SINGLE_PION_END  TIME_lo  TIME_up  ewcor    lumierr  npcor   npcorerr    pt_lo  pt_up  stat_lo  stat_up  uncor  unf_err_lo  unf_err_up  xs         y_lo  y_up

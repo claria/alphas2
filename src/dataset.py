@@ -388,6 +388,11 @@ class DataSet(DataSetBase):
         else:
             raise ValueError('Label \'{}\' not found in sources.'.format(label))
 
+    def get_bin(self, label):
+        if not label in self._get_bin_labels():
+            raise ValueError('Label \'{}\' not found in bin sources.'.format(label))
+        return self._get_bin(label)
+
     def _get_corrected(self, src):
         new_src = deepcopy(src)
         # Apply corrections

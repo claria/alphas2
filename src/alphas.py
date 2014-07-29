@@ -1,13 +1,14 @@
 # Python, np, scipy modules
 # from plotting import AlphasRunningPlot
 import sys
+import numpy as np
 from ext.configobj import ConfigObj
 
 # Alphas fitter modules
 from src.dataset import GobalDataSet
 from src.providers import DataProvider
 from src.fitter import MinuitFitter
-from src.chi2 import Chi2Nuisance, Chi2Cov
+from src.plotting import DataTheoryRatioPlot
 
 
 def calculate_chi2(**kwargs):
@@ -22,7 +23,7 @@ def calculate_chi2(**kwargs):
     for dataset_filename in global_config['datasets']:
         dataset_provider = DataProvider(dataset_filename, global_config)
         dataset = dataset_provider.get_dataset()
-        # dataset.set_theory_parameters(kwargs['asmz'])
+        dataset.set_theory_parameters(kwargs['asmz'])
         global_dataset.add_dataset(dataset)
 
     # We calculate the Chi2 using a 'fit', but we fix alphasmz
@@ -35,7 +36,6 @@ def calculate_chi2(**kwargs):
     props = {'asmz': kwargs['asmz'], 'fix_asmz': True}
     fitter = MinuitFitter(global_dataset, user_initial_values=props)
     fitter.do_fit()
-
 
 
 def perform_fit(**kwargs):
@@ -60,19 +60,17 @@ def perform_fit(**kwargs):
     # fit.save_result()
 
 
-def plot(**kwargs):
+def plot_d2t(**kwargs):
     """Produce the interesting plots, dependent on set commandline options"""
-    # read confi
-    # analysis_config = ConfigObj(kwargs['config'])
-    # read all datasets
-    # datasets_filenames = analysis_config['datasets'].as_list('dataset_filenames')
-    #
-    # datasets = []
-    # for dataset_filename in datasets_filenames:
-    #     dataset_provider = DataSetProvider(dataset_filename)
-    #     dataset = dataset_provider.get_dataset()
-    #     datasets.append(dataset)
-    #
-    # as_plot = AlphasRunningPlot(datasets)
-    # as_plot.do_plot()
-    pass
+    global_config = ConfigObj(kwargs)
+    if kwargs['config']:
+        config_file = ConfigObj(kwargs['config'])
+        global_config.update(dict((k, v) for k, v in config_file.items() if global_config[k] is None))
+
+    for dataset_filename in global_config['datasets']:
+        dataset_provider = DataProvider(dataset_filename, global_config)
+        dataset = dataset_provider.get_dataset()
+        dataset.set_theory_parameters(kwargs['asmz'])
+        d2t_plot = DataTheoryRatioPlot(dataset)
+        d2t_plot.do_plot()
+

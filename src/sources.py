@@ -41,10 +41,10 @@ class Source(object):
         self.source_type = source_type
 
     def __str__(self):
-        return self._label
+        return "{}: {}".format(self.__class__.__name__, self._label)
 
     def __repr__(self):
-        return "{}: {}".format(self.__class__, self._label)
+        return "{}: {}".format(self.__class__.__name__, self._label)
 
     def resize(self, new_size, idx):
         """  Source will be resized to new_size and existing source will be inserted at idx
@@ -90,6 +90,14 @@ class Source(object):
 
     def get_arr(self):
         return self._arr
+
+    def get_arr_unique(self):
+        a = np.ascontiguousarray(self._arr.transpose())
+        unique_a = np.unique(a.view([('', a.dtype)]*a.shape[1]))
+        return unique_a.view(a.dtype).reshape((unique_a.shape[0], a.shape[1]))
+
+    def get_arr_mid(self):
+        return (self._arr[0] + self._arr[1])/2.
 
     def set_arr(self, arr):
         if not isinstance(arr, np.ndarray):

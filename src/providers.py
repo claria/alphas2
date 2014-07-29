@@ -16,6 +16,7 @@ class DataProvider(object):
         self.sources = []
         self._arr_dict = None
         self._dataset_config = None
+        self._dataset = None
         self._global_config = global_config
 
         self._dataset_path = self.get_dataset_path(filename)
@@ -42,22 +43,25 @@ class DataProvider(object):
             raise Exception('Dataset file \"{}\" not found.'.format(filename))
         return dataset_path
 
-    def get_dataset(self):
+    def prepare_dataset(self):
         if self._dataset_config['config']['theory_type'] == 'fastNLO':
             fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
             pdfset = self._global_config['pdfset']
-            return FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
+            self._dataset = FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
                                   label=self._dataset_config['config']['short_label'])
         # elif self._dataset_config['config']['theory_type'] == 'fastNLONormJets':
         #     fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
         #     pdfset = self._global_config['pdfset']
-        #     return FastNLODatasetNormJets(fastnlo_table, pdfset, sources=self.sources,
+        #     self._dataset = FastNLODatasetNormJets(fastnlo_table, pdfset, sources=self.sources,
         #                           label=self._dataset_config['config']['short_label'])
         elif self._dataset_config['config']['theory_type'] == 'test':
-            return TestDataset(sources=self.sources, label=self._dataset_config['config']['short_label'])
+            self._dataset = TestDataset(sources=self.sources, label=self._dataset_config['config']['short_label'])
         else:
             raise Exception('No valid theory_type specified for dataset \"{}\".'.format(
                 self._dataset_config['config']['short_label']))
+
+    def get_dataset(self):
+        return self._dataset
 
     def get_dataset_config(self):
         return self._dataset_config
@@ -157,7 +161,7 @@ class DataProvider(object):
                     'error_scaling': None,
                     'source_relation': 'absolute',
                     'unc_treatment': 'cov'
-            }
+                    }
             try:
                 identifiers = self._parse_identifier(self._dataset_config['data_description'][label])
             except ValueError as e:

@@ -5,7 +5,7 @@ import argparse
 import logging
 
 #import numpy
-from src.alphas import calculate_chi2, perform_fit, plot
+from src.alphas import calculate_chi2, perform_fit, plot_d2t
 
 # Initialize logger
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.ERROR)
@@ -49,8 +49,14 @@ def main():
     ############
 
     parser_plot = subparsers.add_parser('plot', help='Do the plotting', parents=[parent_parser])
-    parser_plot.add_argument('plot', type=str, choices=['running'], help='Types of plots')
-    parser_plot.set_defaults(func=plot)
+    plot_subparsers = parser_plot.add_subparsers()
+    # Data to theory plot
+    parser_d2t = plot_subparsers.add_parser('d2t', help='Plot the data to theory ratio of given datasets',
+                                            parents=[parent_parser])
+    parser_d2t.add_argument('-d', '--datasets', type=str, nargs='+', help='Datasets to be used')
+    parser_d2t.add_argument('-p', '--pdfset', type=str, help='PDF set to be used.')
+    parser_d2t.add_argument('-a', '--asmz', type=float, default=0.1184, help='AsMz value to be used in calculation')
+    parser_d2t.set_defaults(func=plot_d2t)
 
     # Save all commandline arguments in dict
     kwargs = vars(parser.parse_args())

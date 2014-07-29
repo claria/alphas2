@@ -14,7 +14,7 @@ class MinuitFitter(object):
         self._nuis_parameters_sources = self._dataset.get_uncert_list(unc_treatment=('fit',))
         nuis_parameters_fit = [uncertainty.label for uncertainty in self._nuis_parameters_sources]
 
-        initial_values = {'asmz': 0.118, 'error_asmz': 0.0001, 'limit_asmz': (0.100, 0.2)}
+        initial_values = {'asmz': 0.118, 'error_asmz': 0.000001, 'limit_asmz': (0.100, 0.2)}
         for nuis_parameter in nuis_parameters_fit:
             initial_values[nuis_parameter] = 0.
             initial_values['error_{}'.format(nuis_parameter)] = 1.0
@@ -30,16 +30,6 @@ class MinuitFitter(object):
 
         # Create a Minuit object with given starting values.
         self._m = Minuit(MinFunction(self._dataset, pars), **initial_values)
-        print "####### BEFORE FIT########"
-        print "data"
-        print self._dataset.get_data()
-        print "theory"
-        print self._dataset.get_theory()
-        print "covmatrix"
-        print self._dataset.get_cov_matrix()[0,0]
-        print self._dataset.get_cov_matrix()[1,1]
-        print self._dataset.get_cov_matrix()[1,0]
-        print self._dataset.get_cov_matrix()[0,1]
         #import sys
         #sys.exit(0)
 
@@ -49,13 +39,6 @@ class MinuitFitter(object):
         self._m.migrad()
         self._m.minos()
 
-        print "####### AFTER FIT########"
-        print "covmatrix"
-        print self._m.fcn._dataset.get_cov_matrix()[0,0]
-        print self._m.fcn._dataset.get_cov_matrix()[1,1]
-        print self._m.fcn._dataset.get_cov_matrix()[1,0]
-        print self._m.fcn._dataset.get_cov_matrix()[0,1]
-         # Fit parameters and errors
         # print self._m.values
         # print self._m.errors
         # print self._m.get_fmin()
