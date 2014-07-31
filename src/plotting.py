@@ -1,37 +1,63 @@
 import os
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 from src.baseplot import BasePlot
+from src.baseplot import fill_between_steps, plot_steps
+from src.baseplot import ensure_latex
 
 
 class DataTheoryRatioPlot(BasePlot):
 
-    def __init__(self, dataset, **kwargs):
+    def __init__(self, datasets, **kwargs):
         super(DataTheoryRatioPlot, self).__init__(**kwargs)
 
         self.ax = self.fig.add_subplot(111)
-        self._dataset = dataset
+        self._datasets = datasets
 
         self.prepare()
-        self.set_style(self.ax, style='cmsprel')
+        self.set_style(self.ax, style='cms')
 
     def prepare(self):
         self.ax.set_xlabel('$Q$ (GeV)', x=1.0, ha='right', size='large')
         self.ax.set_ylabel(r'$\alpha_\mathrm{{S}}(Q)$ ', y=1.0, ha='right', size='large')
         self.ax.set_xscale('log')
-        pass
+        minorlocator = MultipleLocator(0.1)
+        self.ax.yaxis.set_minor_locator(minorlocator)
+        self.ax.xaxis.set_minor_formatter(
+            plt.FuncFormatter(self.log_locator_filter))
 
     def produce(self):
 
-        print self._dataset.get_bin('pt').get_arr_mid()
-        print self._dataset.get_bin('pt').label
-        self.ax.plot(self._dataset.get_bin('pt').get_arr_mid(), self._dataset.get_data()/self._dataset.get_theory())
-        pass
+        self.ax.axhline(y=1., lw=1., color='black')
+
+        # First dataset defines denominator
+        denom = self._datasets[0].get_theory()
+
+        for dataset in self._datasets:
+
+            if dataset is self._datasets[0]:
+                self.ax.errorbar(x=dataset.get_bin('pt').get_arr_mid(),
+                                 y=dataset.get_data() / denom,
+                                 xerr=dataset.get_bin('pt').get_arr_err(),
+                                 yerr=dataset.get_diag_uncert(source_type='exp_uncert') / denom,
+                                 fmt='o', color='black')
+
+            print dataset.get_bin('pt').get_arr_mid()
+            print dataset.get_theory() / denom
+            _base_line, = plot_steps(dataset.get_bin('pt').get_arr(), dataset.get_theory() / denom,
+                                     lw=2, label=ensure_latex(dataset._pdfset))
+            fill_between_steps(x=dataset.get_bin('pt').get_arr(),
+                               y1=(dataset.get_theory() - dataset.get_diag_uncert(source_type='exp_uncert'))[0] / denom,
+                               y2=(dataset.get_theory() + dataset.get_diag_uncert(source_type='exp_uncert'))[1] / denom,
+                               alpha=0.3, facecolor=_base_line.get_color())
 
     def finalize(self):
 
-        self.ax.set_ylim(0.5,1.5)
-
+        self.ax.legend(loc='upper left')
+        self.ax.set_ylim(0.5, 1.5)
+        self.autoscale(self.ax, xmargin=0.05)
+        self.autoscale(self.ax, ymargin=0.05)
         self._save_fig()
         plt.close(self.fig)
 

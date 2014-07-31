@@ -235,10 +235,10 @@ class fastNLOUncertainties(object):
             self._cache_member_crosssections()
         pdf_uncert = numpy.zeros((2, self._nobsbins))
         if symmetric is True:
-            for i in range(1, self._npdfmembers / 2 + 1):
+            for i in range(1, self._npdfmembers + 1):
                 pdf_uncert[0] += numpy.square(
-                    self._member_crosssections[2 * i - 1] -
-                    self._member_crosssections[2 * i])
+                    self._member_crosssections[i] -
+                    self._member_crosssections[0])
             pdf_uncert[0] = 0.5 * numpy.sqrt(pdf_uncert[0])
             pdf_uncert[1] = pdf_uncert[0]
         else:
@@ -317,9 +317,9 @@ class fastNLOUncertainties(object):
             self._errortype = 'MC'
         elif self._lhgrid_filename.startswith('HERAMC'):
             self._errortype = 'MC'
-        elif self._lhgrid_filename.startswith('HERA'):
+        elif self._lhgrid_filename.startswith('HERAPDF'):
             self._errortype = 'EVVAR'
-        elif self._lhgrid_filename.startswith('ABM'):
+        elif self._lhgrid_filename.startswith('abm11'):
             self._errortype = 'SEV'
         else:
             raise Exception("Unknown PDF type.")

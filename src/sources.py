@@ -56,6 +56,16 @@ class Source(object):
         arr[idx:idx+self.get_nbins()] = self._arr
         self.arr = arr
 
+    def crop(self, bool_arr):
+        if self.arr.ndim == 1:
+            mask = bool_arr
+            self.arr = self.arr[mask]
+        elif self.arr.ndim == 2:
+            mask = np.vstack((bool_arr, bool_arr))
+            self.arr = self.arr[mask].reshape(2, np.count_nonzero(bool_arr))
+        else:
+            raise ValueError('Invalid size of source {}. {} instead of [1...2].'.format(self.label, self.arr.ndim))
+
     def copy(self):
         """ Returns deepcopy of object
         :return: Copy of self object
@@ -98,6 +108,12 @@ class Source(object):
 
     def get_arr_mid(self):
         return (self._arr[0] + self._arr[1])/2.
+
+    def get_arr_mid_unique(self):
+        return np.unique((self._arr[0] + self._arr[1])/2.)
+
+    def get_arr_err(self):
+        return np.vstack((self.get_arr_mid()-self._arr[0], self._arr[1] - self.get_arr_mid()))
 
     def set_arr(self, arr):
         if not isinstance(arr, np.ndarray):
@@ -236,10 +252,21 @@ class UncertaintySource(Source):
         corr_matrix[idx:idx+self.get_nbins(), idx:idx+self.get_nbins()] = self._corr_matrix
         self.arr = arr
         self.corr_matrix = corr_matrix
+
+    def crop(self, bool_arr):
+
+        arr_mask = np.vstack((bool_arr, bool_arr))
+        if not arr_mask.shape == self.arr.shape:
+            raise ValueError('Shape of bool array not matching shape of source array. {} instead of {}.'.format(
+                             arr_mask.shape, self._arr.shape))
+        size = np.count_nonzero(bool_arr)
+        self.arr = self.arr[arr_mask].reshape((2, size))
+        mat_mask = np.outer(bool_arr, bool_arr)
+        self.corr_matrix = self.corr_matrix[mat_mask].reshape(size, size)
+
     #######
     # arr #
     #######
-
 
     @staticmethod
     def _is_covmatrix(arr):

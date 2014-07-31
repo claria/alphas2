@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class DataProvider(object):
-    def __init__(self, filename, global_config):
+    def __init__(self, filename, pdfset):
         self.sources = []
         self._arr_dict = None
         self._dataset_config = None
         self._dataset = None
-        self._global_config = global_config
+        self._pdfset = pdfset
 
         self._dataset_path = self.get_dataset_path(filename)
         self._dataset_config, self._arr_dict = self._read_datafile(self._dataset_path)
@@ -30,7 +30,6 @@ class DataProvider(object):
                 _, arr = self._read_datafile(dataset_path)
                 self._arr_dict.update(arr)
 
-        print self._arr_dict.keys()
         self._parse_arraydict()
 
     @staticmethod
@@ -43,12 +42,12 @@ class DataProvider(object):
             raise Exception('Dataset file \"{}\" not found.'.format(filename))
         return dataset_path
 
-    def prepare_dataset(self):
+    def _prepare_dataset(self):
         if self._dataset_config['config']['theory_type'] == 'fastNLO':
             fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
-            pdfset = self._global_config['pdfset']
+            pdfset = self._pdfset
             self._dataset = FastNLODataset(fastnlo_table, pdfset, sources=self.sources,
-                                  label=self._dataset_config['config']['short_label'])
+                                           label=self._dataset_config['config']['short_label'])
         # elif self._dataset_config['config']['theory_type'] == 'fastNLONormJets':
         #     fastnlo_table = os.path.join(config.table_dir, self._dataset_config['config']['theory_table'])
         #     pdfset = self._global_config['pdfset']
@@ -60,11 +59,18 @@ class DataProvider(object):
             raise Exception('No valid theory_type specified for dataset \"{}\".'.format(
                 self._dataset_config['config']['short_label']))
 
+        # Apply cuts if there are any in the datafile config
+        if 'cuts' in self._dataset_config:
+            for (label, value) in self._dataset_config['cuts'].items():
+                self._dataset.apply_cut(label, value)
+
     def get_dataset(self):
+        self._prepare_dataset()
         return self._dataset
 
     def get_dataset_config(self):
         return self._dataset_config
+
 
     @staticmethod
     def _read_datafile(dataset_path):

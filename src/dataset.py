@@ -129,6 +129,11 @@ class DataSet(DataSetBase):
         if sources is not None:
             self.add_sources(sources)
 
+        self._mask = (self.data == self.data)
+
+    def copy(self):
+        return deepcopy(self)
+
     def _get_unc(self, label):
         """  Lookups and returns uncertainty source of label 'label' in dataset.
         :param label:
@@ -194,6 +199,40 @@ class DataSet(DataSetBase):
         for correction in self._corrections:
             correction.resize(new_size, idx)
 
+    def apply_cut(self, identifier, value):
+
+        label, operator = identifier.split('_')
+
+        if not label in self._get_bin_labels():
+            raise ValueError('Trying to apply cut with nonexisting quantity {}'.format(label))
+
+        try:
+            value = float(value)
+        except ValueError:
+            raise ValueError('Could not convert {} to float.'.format(value))
+
+        if operator == 'min':
+            mask = (self.get_bin(label).get_arr_mid() >= value)
+        elif operator == 'max':
+            mask = (self.get_bin(label).get_arr_mid() <= value)
+        elif operator == 'eq':
+            mask = self.get_bin(label).get_arr_mid() == value
+        elif operator == 'neq':
+            mask = self.get_bin(label).get_arr_mid() != value
+        else:
+            raise ValueError('The given operator {} is not valid.'.format(operator))
+
+        self._theory.crop(mask)
+        self._data.crop(mask)
+
+        for uncert in self._uncertainties:
+            uncert.crop(mask)
+        for bin in self._bins:
+            bin.crop(mask)
+        for correction in self._corrections:
+            correction.crop(mask)
+
+        self._mask[self._mask.nonzero()] = mask
     #########
     # Nbins #
     #########
@@ -333,19 +372,31 @@ class DataSet(DataSetBase):
 
         return cov_matrix
 
-    def get_diagonal_unc(self, corr_type=None, source_type=None, label=None):
+    def get_diag_uncert(self, corr_type=None, source_type=None, label=None, unc_treatment=None):
 
         diag_uncert = np.zeros((2, self.nbins))
         for uncertainty in self._uncertainties:
             if corr_type is not None:
+                if isinstance(corr_type, basestring):
+                    corr_type = [corr_type]
                 if uncertainty.corr_type not in corr_type:
                     continue
             if source_type is not None:
+                if isinstance(source_type, basestring):
+                    source_type = [source_type]
                 if uncertainty.source_type not in source_type:
                     continue
             if label is not None:
+                if isinstance(label, basestring):
+                    label = [label]
                 if uncertainty.label not in label:
                     continue
+            if unc_treatment is not None:
+                if isinstance(unc_treatment, basestring):
+                    unc_treatment = [unc_treatment]
+                if uncertainty.unc_treatment not in unc_treatment:
+                    continue
+
             diag_uncert += np.square(self._get_scaled(uncertainty).get_arr(symmetric=False))
 
         return np.sqrt(diag_uncert)
@@ -482,7 +533,8 @@ class FastNLODataset(DataSet):
 
     def _calculate_theory(self):
 
-        xsnlo = self._fnlo.get_central_crosssection()
+        xsnlo = self._fnlo.get_central_crosssection()[self._mask]
+        size = np.count_nonzero(self._mask)
         self.get_raw_source('theory').set_arr(xsnlo)
         # self._theory = Source(xsnlo, label='xsnlo', source_type='theory')
 
@@ -491,12 +543,12 @@ class FastNLODataset(DataSet):
             logger.debug('Updating pdf uncertainty source')
             if self._usecache:
                 if self._cov_pdf_uncert_rel is not None:
-                    cov_pdf_uncert = self._cov_pdf_uncert_rel * np.outer(xsnlo, xsnlo)
+                    cov_pdf_uncert = self._cov_pdf_uncert_rel[np.outer(self._mask, self._mask)].reshape((size,size)) * np.outer(xsnlo, xsnlo)
                 else:
-                    cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
+                    cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()[np.outer(self._mask, self._mask)].reshape((size,size))
                     self._cov_pdf_uncert_rel = cov_pdf_uncert / np.outer(xsnlo, xsnlo)
             else:
-                cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()
+                cov_pdf_uncert = self._fnlo.get_pdf_cov_matrix()[np.outer(self._mask, self._mask)].reshape((size,size))
             self.get_raw_source('pdf_uncert').set_arr(cov_pdf_uncert)
         if 'scale_uncert' in self._get_unc_labels():
             scale_uncert = self._fnlo.get_scale_uncert()

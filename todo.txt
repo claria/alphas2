@@ -1,4 +1,4 @@
 (A) Complete solution for Fitting class
 (B) Throw warning if not fully correlated source is treated with nuisance parameters.
 (C) Generalize fnlo uncertainty backend
-
+(C) Correct labelling and plotting for data/theory plots

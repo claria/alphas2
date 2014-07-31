@@ -14,6 +14,7 @@ xsnlo            = theory
 stat             = exp_uncert:relative:bintobin
 uncor            = exp_uncert:relative:uncorr
 npcor            = theo_correction
+ewcor            = theo_correction
 lumierr          = exp_uncert:relative:corr:multiplicative:nuis
 ABSOLUTE         = exp_uncert:relative:corr:multiplicative:cov
 unf_err          = exp_uncert:relative:corr:multiplicative:cov
@@ -37,16 +38,19 @@ RelativeStatHF   = exp_uncert:relative:corr:multiplicative:cov
 RelativeJERC1    = exp_uncert:relative:corr:multiplicative:cov
 RelativeFSR      = exp_uncert:relative:corr:multiplicative:cov
 npcorerr         = theo_uncert:absolute:corr:cov
-# pdf_uncert       = theo_uncert:bintobin
+#pdf_uncert       = theo_uncert:bintobin
 
 [plot]
-x = pt
-split_fig = y
+diff_0 = y
+diff_0_label = '|y|'
+diff_1 = pt
+diff_1_label = 'pT (GeV)'
+
 
 [cuts]
 y_min  = 0.0
-y_max  = 0.5
-pt_min = 10.
+y_max  = 2.5
+pt_min = 100.
 pt_max = 1000000.
 
 
